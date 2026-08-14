@@ -33,7 +33,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
 
   bool _isScanned = false;
   bool _scanSuccess = false;
-  String? _scannedCode;
   bool _torchOn = false;
   bool _hasPermission = false;
   bool _checkingPermission = true;
@@ -110,15 +109,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
         if (mounted) {
           setState(() {
             _scanSuccess = true;
-            _scannedCode = code;
           });
-
-          // Hologram yeşil kilitlenme efektini göstermek için 300ms bekleyip kapat
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              Navigator.pop(context, code);
-            }
-          });
+          Navigator.pop(context, code);
         }
         break;
       }
@@ -207,10 +199,36 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                       },
                     ),
 
-                    // Futuristic Holographic Target Overlay (Red on Scan, Green on Success)
-                    _HologramScannerTarget(
-                      isSuccess: _scanSuccess,
-                      detectedCode: _scannedCode,
+                    // Kare Çerçeve ve Ortasında Sabit Kırmızı Çizgi
+                    Center(
+                      child: Container(
+                        width: 260,
+                        height: 260,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: _scanSuccess ? Colors.greenAccent : Colors.white70,
+                            width: 2.5,
+                          ),
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 230,
+                            height: 2.5,
+                            decoration: BoxDecoration(
+                              color: _scanSuccess ? Colors.greenAccent : Colors.redAccent,
+                              borderRadius: BorderRadius.circular(2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (_scanSuccess ? Colors.greenAccent : Colors.redAccent).withValues(alpha: 0.8),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
 
                     // Top Info Hint Banner
@@ -223,18 +241,14 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.75),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: _scanSuccess
-                                ? const Color(0xFF00FF88).withValues(alpha: 0.5)
-                                : const Color(0xFFFF2A4B).withValues(alpha: 0.4),
-                          ),
+                          border: Border.all(color: Colors.white24),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               _scanSuccess ? Icons.check_circle_rounded : Icons.qr_code_scanner_rounded,
-                              color: _scanSuccess ? const Color(0xFF00FF88) : const Color(0xFFFF2A4B),
+                              color: _scanSuccess ? Colors.greenAccent : Colors.redAccent,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
@@ -387,228 +401,4 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
       ),
     );
   }
-}
-
-/// Hologram Hedefleme & Lazer Çerçevesi (Kırmızı Okuma / Yeşil Başarılı)
-class _HologramScannerTarget extends StatelessWidget {
-  final bool isSuccess;
-  final String? detectedCode;
-
-  const _HologramScannerTarget({
-    required this.isSuccess,
-    this.detectedCode,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final themeColor = isSuccess ? const Color(0xFF00FF88) : const Color(0xFFFF2A4B);
-    final glowColor = isSuccess
-        ? const Color(0xFF00FF88).withValues(alpha: 0.6)
-        : const Color(0xFFFF2A4B).withValues(alpha: 0.5);
-
-    return Center(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        width: 275,
-        height: 275,
-        decoration: BoxDecoration(
-          color: themeColor.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: themeColor.withValues(alpha: 0.35),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: glowColor.withValues(alpha: 0.25),
-              blurRadius: 22,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Holographic Corner Brackets
-            CustomPaint(
-              size: const Size(275, 275),
-              painter: _HologramBracketPainter(color: themeColor),
-            ),
-
-            // Top HUD Hologram Text
-            Positioned(
-              top: 14,
-              left: 14,
-              right: 14,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isSuccess ? '● HEDEF KİLİTLENDİ' : '● BARKOD ARANIYOR',
-                    style: GoogleFonts.outfit(
-                      color: themeColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      shadows: [
-                        Shadow(color: glowColor, blurRadius: 8),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    isSuccess ? '[ OK ]' : '[ TARA ]',
-                    style: GoogleFonts.outfit(
-                      color: themeColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(color: glowColor, blurRadius: 8),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Center Stationary Laser Line (Sabit Kırmızı / Yeşil Lazer Çizgisi)
-            Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Laser Glow Flare
-                  Container(
-                    width: 245,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        colors: [
-                          glowColor,
-                          Colors.transparent,
-                        ],
-                        radius: 0.85,
-                      ),
-                    ),
-                  ),
-                  // Core Sharp Laser Line
-                  Container(
-                    width: 235,
-                    height: 2.2,
-                    decoration: BoxDecoration(
-                      color: themeColor,
-                      borderRadius: BorderRadius.circular(2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: glowColor,
-                          blurRadius: 10,
-                          spreadRadius: 1.5,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Center Crosshair Pip
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(color: themeColor, blurRadius: 6, spreadRadius: 2),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Bottom HUD Hologram Text
-            Positioned(
-              bottom: 14,
-              left: 14,
-              right: 14,
-              child: Center(
-                child: Text(
-                  isSuccess
-                      ? (detectedCode != null && detectedCode!.isNotEmpty ? 'KOD: $detectedCode' : 'KİLİTLENDİ')
-                      : 'HİZALAMA: MERKEZ ÇİZGİ',
-                  style: GoogleFonts.outfit(
-                    color: themeColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.3,
-                    shadows: [
-                      Shadow(color: glowColor, blurRadius: 8),
-                    ],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Hologram Köşe Çerçevesi Çizicisi
-class _HologramBracketPainter extends CustomPainter {
-  final Color color;
-  _HologramBracketPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 3.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final glowPaint = Paint()
-      ..color = color.withValues(alpha: 0.5)
-      ..strokeWidth = 7.0
-      ..style = PaintingStyle.stroke
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-
-    const len = 28.0;
-    const r = 20.0;
-
-    // 1. Top-Left Corner
-    final pathTL = Path()
-      ..moveTo(0, len)
-      ..lineTo(0, r)
-      ..arcToPoint(const Offset(r, 0), radius: const Radius.circular(r))
-      ..lineTo(len, 0);
-    canvas.drawPath(pathTL, glowPaint);
-    canvas.drawPath(pathTL, paint);
-
-    // 2. Top-Right Corner
-    final pathTR = Path()
-      ..moveTo(size.width - len, 0)
-      ..lineTo(size.width - r, 0)
-      ..arcToPoint(Offset(size.width, r), radius: const Radius.circular(r))
-      ..lineTo(size.width, len);
-    canvas.drawPath(pathTR, glowPaint);
-    canvas.drawPath(pathTR, paint);
-
-    // 3. Bottom-Left Corner
-    final pathBL = Path()
-      ..moveTo(0, size.height - len)
-      ..lineTo(0, size.height - r)
-      ..arcToPoint(Offset(r, size.height), radius: const Radius.circular(r))
-      ..lineTo(len, size.height);
-    canvas.drawPath(pathBL, glowPaint);
-    canvas.drawPath(pathBL, paint);
-
-    // 4. Bottom-Right Corner
-    final pathBR = Path()
-      ..moveTo(size.width - len, size.height)
-      ..lineTo(size.width - r, size.height)
-      ..arcToPoint(Offset(size.width, size.height - r), radius: const Radius.circular(r))
-      ..lineTo(size.width, size.height - len);
-    canvas.drawPath(pathBR, glowPaint);
-    canvas.drawPath(pathBR, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _HologramBracketPainter oldDelegate) => oldDelegate.color != color;
 }

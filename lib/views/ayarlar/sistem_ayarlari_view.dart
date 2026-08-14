@@ -8,6 +8,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/printer_service.dart';
 import '../../services/sound_service.dart';
 import '../../widgets/barcode_scanner_view.dart';
+import '../../widgets/device_permissions_modal.dart';
 import '../../widgets/dynamic_island_toast.dart';
 import '../../widgets/printer_detail_modal.dart';
 import '../db_listele_view.dart';
@@ -529,6 +530,28 @@ class _SistemAyarlariViewState extends State<SistemAyarlariView> {
                       ),
                     ],
                   ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00C6FF).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.security_rounded, color: Color(0xFF0072FF), size: 22),
+                  ),
+                  title: Text(
+                    context.tr('cihaz_ve_sistem_izinleri', 'Cihaz & Sistem İzinleri'),
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  subtitle: Text(
+                    'Kamera, Bluetooth, yerel ağ ve bildirim yetkilendirmeleri',
+                    style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                  onTap: () => DevicePermissionsModal.show(context),
                 ),
               ],
             ),

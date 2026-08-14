@@ -61,17 +61,27 @@ class PermissionService {
     return status.isGranted;
   }
 
-  /// Uygulama açılışında tüm temel izinleri (Kamera, Bluetooth, Bildirim, Depolama) topluca talep eder
+  /// Uygulama açılışında tüm temel izinleri (Kamera, Bluetooth, Bildirim, Galeri) topluca talep eder
   static Future<void> requestAllAppPermissions([BuildContext? context]) async {
     if (!Platform.isAndroid && !Platform.isIOS) return;
 
     final list = <Permission>[
       Permission.camera,
       Permission.notification,
-      Permission.location,
-      Permission.bluetoothScan,
-      Permission.bluetoothConnect,
     ];
+
+    if (Platform.isAndroid) {
+      list.addAll([
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+        Permission.location,
+      ]);
+    } else if (Platform.isIOS) {
+      list.addAll([
+        Permission.bluetooth,
+        Permission.photos,
+      ]);
+    }
 
     try {
       await list.request();

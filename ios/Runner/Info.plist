@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Bym360</string>
+	<string>BYM 360</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,6 +26,46 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>UIRequiresPersistentWiFi</key>
+	<true/>
+
+	<!-- Kamera İzni (Barkod ve Karekod Okuma) -->
+	<key>NSCameraUsageDescription</key>
+	<string>Barkod, karekod ve stok kodlarını anlık olarak okutabilmek için kamera erişim izni gereklidir.</string>
+
+	<!-- Bluetooth İzinleri (Termal Fiş & Etiket Yazıcıları) -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Mobil termal fiş ve etiket yazıcılarına Bluetooth üzerinden bağlanıp yazdırma yapabilmek için Bluetooth izni gereklidir.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Kablosuz POS ve termal yazıcılar ile veri alışverişi yapabilmek için Bluetooth bağlantısı kullanılır.</string>
+
+	<!-- Yerel Ağ İzni (WiFi Ağ / IP Yazıcıları) -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Yerel WiFi ağınızdaki IP termal fiş yazıcılarını, etiket yazıcılarını ve ağ yazıcılarını otomatik bulup yazdırma yapabilmek için yerel ağ erişimi gereklidir.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_ipp._tcp</string>
+		<string>_ipps._tcp</string>
+		<string>_pdl-datastream._tcp</string>
+		<string>_printer._tcp</string>
+		<string>_http._tcp</string>
+		<string>_services._dns-sd._udp</string>
+	</array>
+
+	<!-- Fotoğraf Galerisi & Belge İzinleri (PDF Fiş / Rapor İndirme) -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Oluşturulan belge, fatura ve etiket PDF çıktılarını kaydedebilmek için fotoğraf galerisi izni gereklidir.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Yazdırılan ve oluşturulan belgeleri galeriye kaydedebilmek için izin gereklidir.</string>
+
+	<!-- Arka Plan Modları -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+	</array>
+
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
