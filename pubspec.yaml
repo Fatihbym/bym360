@@ -1,0 +1,61 @@
+name: bym360
+description: BYM 360 - Mobil ERP, Depo ve Stok Yönetimi Flutter Uygulaması
+publish_to: 'none'
+version: 1.1.8+171
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # UI & Design
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_spinkit: ^5.2.0
+  animate_do: ^3.1.2
+  intl: ^0.20.3
+  mobile_scanner: ^5.2.3
+  permission_handler: ^11.3.1
+  audioplayers: ^6.0.0
+
+  # Networking & HTTP
+  http: ^1.2.0
+
+  # Local Persistence & Storage
+  shared_preferences: ^2.2.2
+  sqflite: ^2.3.2
+  path: ^1.9.0
+
+  # Printing & PDF Document Generation
+  pdf: ^3.11.1
+  printing: ^5.13.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/sounds/
+    - assets/fonts/
+    - assets/lang/
+
+  fonts:
+    - family: Exo2
+      fonts:
+        - asset: assets/fonts/Exo2-Regular.otf
+        - asset: assets/fonts/Exo2-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Exo2-Bold.otf
+          weight: 700
+
+
