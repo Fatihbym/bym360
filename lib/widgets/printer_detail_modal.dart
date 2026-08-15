@@ -135,13 +135,6 @@ class _PrinterDetailModalState extends State<PrinterDetailModal> {
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurface : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -174,23 +167,10 @@ class _PrinterDetailModalState extends State<PrinterDetailModal> {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isNetwork
-                        ? [const Color(0xFF007AFF), const Color(0xFF00C6FF)]
-                        : (isBluetooth
-                            ? [const Color(0xFF5856D6), const Color(0xFFAF52DE)]
-                            : [const Color(0xFFFF9500), const Color(0xFFFFCC00)]),
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: isNetwork
+                      ? const Color(0xFF007AFF)
+                      : (isBluetooth ? const Color(0xFF5856D6) : const Color(0xFFFF9500)),
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isNetwork ? const Color(0xFF007AFF) : const Color(0xFF5856D6)).withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
                 child: Icon(
                   isNetwork

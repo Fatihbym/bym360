@@ -57,7 +57,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
         BarcodeFormat.qrCode,
         BarcodeFormat.upcA,
         BarcodeFormat.upcE,
-        BarcodeFormat.itf,
+        BarcodeFormat.itf14,
         BarcodeFormat.dataMatrix,
         BarcodeFormat.aztec,
         BarcodeFormat.pdf417,
@@ -166,7 +166,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                     MobileScanner(
                       controller: _controller,
                       onDetect: _onDetect,
-                      errorBuilder: (context, error, child) {
+                      errorBuilder: (context, error) {
                         return Center(
                           child: Padding(
                             padding: const EdgeInsets.all(24.0),
@@ -218,13 +218,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Widget
                             decoration: BoxDecoration(
                               color: _scanSuccess ? Colors.greenAccent : Colors.redAccent,
                               borderRadius: BorderRadius.circular(2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: (_scanSuccess ? Colors.greenAccent : Colors.redAccent).withValues(alpha: 0.8),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ],
                             ),
                           ),
                         ),

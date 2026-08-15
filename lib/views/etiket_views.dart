@@ -705,11 +705,7 @@ class EtiketSecimView extends StatelessWidget {
             context,
             title: 'Tekli Etiket Basımı',
             icon: Icons.inventory_2_rounded,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2DD4BF), Color(0xFF0D9488)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: const Color(0xFF0D9488),
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const TekliEtiketView()));
             },
@@ -719,11 +715,7 @@ class EtiketSecimView extends StatelessWidget {
             context,
             title: 'Çoklu Etiket Basımı',
             icon: Icons.inventory_2_rounded,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2DD4BF), Color(0xFF0D9488)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: const Color(0xFF0284C7),
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const FiyatiDegisenEtiketView()));
             },
@@ -737,13 +729,13 @@ class EtiketSecimView extends StatelessWidget {
     BuildContext context, {
     required String title,
     required IconData icon,
-    required LinearGradient gradient,
+    required Color color,
     required VoidCallback onTap,
   }) {
     return Container(
       height: 110,
       decoration: BoxDecoration(
-        gradient: gradient,
+        color: color,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Material(

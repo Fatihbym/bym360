@@ -27,7 +27,7 @@ class DepoYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Depo Sevk', 'Depo Sevk'),
               icon: Icons.swap_horizontal_circle_rounded,
-              gradient: AppTheme.cyanGradient,
+              color: AppTheme.accentCyan,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BelgeListeleView(belgeTuru: 'TRANSFER')),
@@ -39,7 +39,7 @@ class DepoYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Sayım İşlemleri', 'Sayım İşlemleri'),
               icon: Icons.fact_check_rounded,
-              gradient: AppTheme.primaryGradient,
+              color: AppTheme.primaryBlue,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BelgeListeleView(belgeTuru: 'SAYIM')),
@@ -51,11 +51,7 @@ class DepoYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Depo Sevk İstek', 'Depo Sevk İstek'),
               icon: Icons.unarchive_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF1E40AF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFF3B82F6),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BelgeListeleView(belgeTuru: 'SEVK_ISTEK')),
@@ -67,11 +63,7 @@ class DepoYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Depo İstek İade', 'Depo İstek İade'),
               icon: Icons.assignment_return_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFFEF4444), Color(0xFF991B1B)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFFEF4444),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BelgeListeleView(belgeTuru: 'SEVK_IADE_ISTEK')),
@@ -83,7 +75,7 @@ class DepoYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Ürün Toplama', 'Ürün Toplama'),
               icon: Icons.grid_view_rounded,
-              gradient: AppTheme.orangeGradient,
+              color: AppTheme.accentOrange,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const UrunToplamaView()),
@@ -101,7 +93,7 @@ class DepoYonetimiView extends StatelessWidget {
     required String title,
     String? subtitle,
     required IconData icon,
-    required LinearGradient gradient,
+    required Color color,
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -128,7 +120,7 @@ class DepoYonetimiView extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: gradient,
+                    color: color,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(icon, color: Colors.white, size: 26),

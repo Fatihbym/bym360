@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../core/storage/save_settings.dart';
 import '../core/theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../widgets/cari_secim_dialog.dart';
@@ -572,7 +574,62 @@ class _TahsilatListeleViewState extends State<TahsilatListeleView> with SingleTi
     }
   }
 
-  Widget _buildList(List<GetTahsilatListe> items) {
+  double get _kasaToplam => _kasaList.fold(0.0, (sum, item) => sum + item.tutar);
+  double get _bankaToplam => _bankaList.fold(0.0, (sum, item) => sum + item.tutar);
+  double get _genelToplam => _kasaToplam + _bankaToplam;
+
+  Widget _buildStatBadge({
+    required String title,
+    required double amount,
+    required Color color,
+    required IconData icon,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 13, color: color),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '₺${amount.toStringAsFixed(2)}',
+            style: GoogleFonts.outfit(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList(List<GetTahsilatListe> items, {required bool isDark}) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -582,15 +639,29 @@ class _TahsilatListeleViewState extends State<TahsilatListeleView> with SingleTi
         onRefresh: _loadTahsilat,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 100),
+          children: [
+            const SizedBox(height: 80),
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.receipt_long_rounded, size: 64, color: Colors.grey),
-                  SizedBox(height: 12),
-                  Text('Henüz tahsilat kaydı bulunmamaktadır.', style: TextStyle(color: Colors.grey)),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.receipt_long_rounded, size: 48, color: Colors.grey.shade400),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Henüz tahsilat kaydı bulunmamaktadır.',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppTheme.darkTextSecondary : Colors.grey.shade600,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -602,59 +673,109 @@ class _TahsilatListeleViewState extends State<TahsilatListeleView> with SingleTi
     return RefreshIndicator(
       onRefresh: _loadTahsilat,
       child: ListView.builder(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
           final isKasa = item.tur.toUpperCase() == 'KASA';
+          final badgeColor = isKasa ? AppTheme.accentGreen : AppTheme.primaryBlue;
 
-          return Card(
+          return Container(
             margin: const EdgeInsets.only(bottom: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isKasa ? AppTheme.accentGreen.withValues(alpha: 0.1) : AppTheme.primaryBlue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  isKasa ? Icons.payments_rounded : Icons.account_balance_rounded,
-                  color: isKasa ? AppTheme.accentGreen : AppTheme.primaryBlue,
-                ),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
               ),
-              title: Text(item.cariAdi, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-              subtitle: Text(
-                '${item.tarih}\n${item.aciklama.isNotEmpty ? item.aciklama : (isKasa ? "Nakit Kasa Tahsilatı" : "Banka Tahsilatı")}',
-                style: const TextStyle(fontSize: 12),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '₺${item.tutar.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: isKasa ? AppTheme.accentGreen : AppTheme.primaryBlue,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(14.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isKasa ? Icons.payments_rounded : Icons.account_balance_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.cariAdi.isNotEmpty ? item.cariAdi : 'Genel Cari',
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${item.tarih} • ${item.aciklama.isNotEmpty ? item.aciklama : (isKasa ? "Nakit Kasa" : "Banka EFT/POS")}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '₺${item.tutar.toStringAsFixed(2)}',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: badgeColor,
+                          ),
                         ),
-                      ),
-                      Text(
-                        item.tur.toUpperCase(),
-                        style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentRed),
-                    onPressed: () => _deleteTahsilat(item),
-                  ),
-                ],
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            item.tur.toUpperCase(),
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: badgeColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.accentRed, size: 20),
+                      padding: const EdgeInsets.only(left: 6),
+                      constraints: const BoxConstraints(),
+                      tooltip: 'Sil',
+                      onPressed: () => _deleteTahsilat(item),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -678,11 +799,15 @@ class _TahsilatListeleViewState extends State<TahsilatListeleView> with SingleTi
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Tahsilat Türü Seçiniz', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Tahsilat Türü Seçiniz', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(Icons.payments_rounded, color: AppTheme.accentGreen),
-                title: const Text('Kasa Tahsilat Ekle (Nakit)', style: TextStyle(fontWeight: FontWeight.bold)),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: AppTheme.accentGreen, borderRadius: BorderRadius.circular(10)),
+                  child: const Icon(Icons.payments_rounded, color: Colors.white, size: 20),
+                ),
+                title: Text('Kasa Tahsilat Ekle (Nakit)', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(ctx);
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const KasaTahsilatEkleView())).then((_) => _loadTahsilat());
@@ -690,8 +815,12 @@ class _TahsilatListeleViewState extends State<TahsilatListeleView> with SingleTi
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.account_balance_rounded, color: AppTheme.primaryBlue),
-                title: const Text('Banka Tahsilat Ekle (Kredi Kartı/EFT)', style: TextStyle(fontWeight: FontWeight.bold)),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: AppTheme.primaryBlue, borderRadius: BorderRadius.circular(10)),
+                  child: const Icon(Icons.account_balance_rounded, color: Colors.white, size: 20),
+                ),
+                title: Text('Banka Tahsilat Ekle (Kredi Kartı/EFT)', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
                 onTap: () {
                   Navigator.pop(ctx);
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const BankaTahsilatEkleView())).then((_) => _loadTahsilat());
@@ -706,22 +835,19 @@ class _TahsilatListeleViewState extends State<TahsilatListeleView> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final allList = [..._kasaList, ..._bankaList];
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tahsilat Geçmişi'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'TÜMÜ'),
-            Tab(text: 'KASA'),
-            Tab(text: 'BANKA'),
-          ],
+        title: Text(
+          context.tr('Tahsilat Geçmişi', 'Tahsilat Geçmişi'),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Yenile',
             onPressed: _loadTahsilat,
           ),
         ],
@@ -731,14 +857,165 @@ class _TahsilatListeleViewState extends State<TahsilatListeleView> with SingleTi
         backgroundColor: AppTheme.primaryBlue,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('YENİ TAHSİLAT EKLE', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: Text(
+          'YENİ TAHSİLAT EKLE',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildList(allList),
-          _buildList(_kasaList),
-          _buildList(_bankaList),
+          // 1. Premium Segmented Menu Bar (Capsule TabBar)
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.darkSurface : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
+              ),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              indicator: BoxDecoration(
+                color: AppTheme.primaryBlue,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+              labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+              unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+              tabs: [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.all_inbox_rounded, size: 16),
+                      const SizedBox(width: 6),
+                      const Text('Tümü'),
+                      if (!_isLoading && allList.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${allList.length}',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.payments_rounded, size: 16),
+                      const SizedBox(width: 6),
+                      const Text('Kasa'),
+                      if (!_isLoading && _kasaList.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${_kasaList.length}',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.account_balance_rounded, size: 16),
+                      const SizedBox(width: 6),
+                      const Text('Banka'),
+                      if (!_isLoading && _bankaList.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${_bankaList.length}',
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 2. Financial Stat Badges (Summary Strip)
+          if (!_isLoading) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildStatBadge(
+                      title: 'Toplam Kasa',
+                      amount: _kasaToplam,
+                      color: AppTheme.accentGreen,
+                      icon: Icons.payments_rounded,
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildStatBadge(
+                      title: 'Toplam Banka',
+                      amount: _bankaToplam,
+                      color: AppTheme.primaryBlue,
+                      icon: Icons.account_balance_rounded,
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildStatBadge(
+                      title: 'Genel Toplam',
+                      amount: _genelToplam,
+                      color: const Color(0xFF8B5CF6),
+                      icon: Icons.pie_chart_rounded,
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
+
+          // 3. TabBarView Lists
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildList(allList, isDark: isDark),
+                _buildList(_kasaList, isDark: isDark),
+                _buildList(_bankaList, isDark: isDark),
+              ],
+            ),
+          ),
         ],
       ),
     );

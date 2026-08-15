@@ -253,13 +253,6 @@ class AppDialogs {
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 25,
-                    offset: const Offset(0, -10),
-                  ),
-                ],
               ),
               child: SingleChildScrollView(
                 padding: EdgeInsets.only(
@@ -282,101 +275,20 @@ class AppDialogs {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
-                    // Top Hero Banner Image
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Stack(
-                        alignment: Alignment.bottomLeft,
-                        children: [
-                          Image.asset(
-                            'assets/images/permissions_banner.jpg',
-                            height: 150,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              height: 130,
-                              width: double.infinity,
-                              decoration: const BoxDecoration(
-                                gradient: AppTheme.primaryGradient,
-                              ),
-                              child: const Icon(Icons.security_rounded, size: 56, color: Colors.white),
-                            ),
-                          ),
-                          Container(
-                            height: 150,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.85),
-                                  Colors.transparent,
-                                ],
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryBlue,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.verified_user_rounded, color: Colors.white, size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'CİHAZ ERİŞİM SİSTEMİ',
-                                        style: GoogleFonts.inter(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Title & Description
+                    // Title
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Cihaz İzinleri & Erişim',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Yazıcı bağlantısı, konum servisi ve barkod okuyucu için gereklidir.',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            'Cihaz İzinleri',
+                            style: GoogleFonts.outfit(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
                           ),
                         ),
                         IconButton(
@@ -431,7 +343,7 @@ class AppDialogs {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryBlue,
                           foregroundColor: Colors.white,
-                          elevation: 2,
+                          elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         onPressed: isRequesting
@@ -474,16 +386,9 @@ class AppDialogs {
                                 height: 22,
                                 child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                               )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.verified_user_rounded, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'İZİNLERİ ONAYLA VE İZİN VER',
-                                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.3),
-                                  ),
-                                ],
+                            : Text(
+                                'İzinleri Onayla ve İzin Ver',
+                                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
                               ),
                       ),
                     ),

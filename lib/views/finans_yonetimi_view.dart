@@ -27,7 +27,7 @@ class FinansYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Kasa Tahsilat', 'Kasa Tahsilat'),
               icon: Icons.payments_rounded,
-              gradient: AppTheme.greenGradient,
+              color: AppTheme.accentGreen,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const TahsilatListeleView(initialIndex: 1)),
@@ -39,7 +39,7 @@ class FinansYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Banka Tahsilat', 'Banka Tahsilat'),
               icon: Icons.account_balance_rounded,
-              gradient: AppTheme.primaryGradient,
+              color: AppTheme.primaryBlue,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const TahsilatListeleView(initialIndex: 2)),
@@ -51,7 +51,7 @@ class FinansYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Cari Hesap Ekstre', 'Cari Hesap Ekstre'),
               icon: Icons.insights_rounded,
-              gradient: AppTheme.cyanGradient,
+              color: AppTheme.accentCyan,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const CariHareketEkstreView()),
@@ -63,7 +63,7 @@ class FinansYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Gün Sonu Raporu', 'Gün Sonu Raporu'),
               icon: Icons.bar_chart_rounded,
-              gradient: AppTheme.purpleGradient,
+              color: AppTheme.accentPurple,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const KullaniciRaporView()),
@@ -75,11 +75,7 @@ class FinansYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Cari Ekle', 'Cari Ekle'),
               icon: Icons.person_add_alt_1_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF10B981), Color(0xFF047857)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFF10B981),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const CariEkleView()),
@@ -97,7 +93,7 @@ class FinansYonetimiView extends StatelessWidget {
     required String title,
     String? subtitle,
     required IconData icon,
-    required LinearGradient gradient,
+    required Color color,
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -124,7 +120,7 @@ class FinansYonetimiView extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: gradient,
+                    color: color,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(icon, color: Colors.white, size: 26),

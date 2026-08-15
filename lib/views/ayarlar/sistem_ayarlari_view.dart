@@ -354,7 +354,7 @@ class _SistemAyarlariViewState extends State<SistemAyarlariView> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          context.tr('sistemayarlari', 'Sistem & Donanım Ayarları'),
+          context.tr('ayarlar', 'Ayarlar'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
       ),
@@ -498,7 +498,7 @@ class _SistemAyarlariViewState extends State<SistemAyarlariView> {
                               ),
                               onPressed: () async {
                                 final messenger = ScaffoldMessenger.of(context);
-                                final code = await BarcodeScannerScreen.scan(context, title: 'Barkod Okuyucu Sınaması');
+                                final code = await BarcodeScannerScreen.scan(context, title: 'Barkod Okuyucu Test');
                                 if (code != null && mounted) {
                                   messenger.showSnackBar(
                                     SnackBar(
@@ -509,7 +509,7 @@ class _SistemAyarlariViewState extends State<SistemAyarlariView> {
                                 }
                               },
                               icon: const Icon(Icons.qr_code_scanner_rounded, color: AppTheme.primaryBlue, size: 18),
-                              label: Text(context.tr('barkod_test_et', 'Barkod Sına'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+                              label: Text('Barkod Okuyucu Test', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -534,21 +534,9 @@ class _SistemAyarlariViewState extends State<SistemAyarlariView> {
                 const Divider(height: 1),
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00C6FF).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.security_rounded, color: Color(0xFF0072FF), size: 22),
-                  ),
                   title: Text(
-                    context.tr('cihaz_ve_sistem_izinleri', 'Cihaz & Sistem İzinleri'),
+                    context.tr('cihaz_ve_sistem_izinleri', 'Cihaz İzinleri'),
                     style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  subtitle: Text(
-                    'Kamera, Bluetooth, yerel ağ ve bildirim yetkilendirmeleri',
-                    style: GoogleFonts.inter(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54),
                   ),
                   trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
                   onTap: () => DevicePermissionsModal.show(context),
@@ -665,7 +653,7 @@ class _SistemAyarlariViewState extends State<SistemAyarlariView> {
                     child: const Icon(Icons.corporate_fare_rounded, color: AppTheme.primaryBlue, size: 20),
                   ),
                   title: Text(context.tr('hakkinda', 'Geliştirici & Lisans'), style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
-                  subtitle: Text(context.tr('hakkinda_sub', 'BYM Yazılım - Kurumsal Mobil Çözümler'), style: const TextStyle(fontSize: 12)),
+                  subtitle: Text(context.tr('hakkinda_sub', 'BYM Yazılım'), style: const TextStyle(fontSize: 12)),
                 ),
               ],
             ),
@@ -1013,10 +1001,16 @@ class _SistemAyarlariViewState extends State<SistemAyarlariView> {
                             ),
                             TextButton.icon(
                               onPressed: _isScanningPrinters ? null : () async {
-                                setSheetState(() => _isScanningPrinters = true);
+                                try {
+                                  setSheetState(() => _isScanningPrinters = true);
+                                } catch (_) {}
                                 await _scanNetworkPrinters();
-                                setSheetState(() => _isScanningPrinters = false);
-                                setState(() {});
+                                if (mounted) {
+                                  try {
+                                    setSheetState(() => _isScanningPrinters = false);
+                                  } catch (_) {}
+                                  setState(() {});
+                                }
                               },
                               icon: _isScanningPrinters
                                   ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
@@ -1053,10 +1047,16 @@ class _SistemAyarlariViewState extends State<SistemAyarlariView> {
                                   width: double.infinity,
                                   child: OutlinedButton.icon(
                                     onPressed: _isScanningPrinters ? null : () async {
-                                      setSheetState(() => _isScanningPrinters = true);
+                                      try {
+                                        setSheetState(() => _isScanningPrinters = true);
+                                      } catch (_) {}
                                       await _scanNetworkPrinters();
-                                      setSheetState(() => _isScanningPrinters = false);
-                                      setState(() {});
+                                      if (mounted) {
+                                        try {
+                                          setSheetState(() => _isScanningPrinters = false);
+                                        } catch (_) {}
+                                        setState(() {});
+                                      }
                                     },
                                     icon: _isScanningPrinters
                                         ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
@@ -1193,10 +1193,16 @@ class _SistemAyarlariViewState extends State<SistemAyarlariView> {
                             ),
                             TextButton.icon(
                               onPressed: _isScanningPrinters ? null : () async {
-                                setSheetState(() => _isScanningPrinters = true);
+                                try {
+                                  setSheetState(() => _isScanningPrinters = true);
+                                } catch (_) {}
                                 await _scanBluetoothPrinters();
-                                setSheetState(() => _isScanningPrinters = false);
-                                setState(() {});
+                                if (mounted) {
+                                  try {
+                                    setSheetState(() => _isScanningPrinters = false);
+                                  } catch (_) {}
+                                  setState(() {});
+                                }
                               },
                               icon: _isScanningPrinters
                                   ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))

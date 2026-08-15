@@ -29,7 +29,7 @@ class UrunYonetimiView extends StatelessWidget {
               context,
               title: context.tr('kabulislem', 'Kabul İşlemleri'),
               icon: Icons.move_to_inbox_rounded,
-              gradient: AppTheme.greenGradient,
+              color: AppTheme.accentGreen,
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BelgeListeleView(belgeTuru: 'MALKABUL'))),
             ),
 
@@ -38,7 +38,7 @@ class UrunYonetimiView extends StatelessWidget {
               context,
               title: context.tr('satisislem', 'Satış İşlemleri'),
               icon: Icons.receipt_long_rounded,
-              gradient: AppTheme.cyanGradient,
+              color: AppTheme.accentCyan,
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BelgeListeleView(belgeTuru: 'SATIS'))),
             ),
 
@@ -47,11 +47,7 @@ class UrunYonetimiView extends StatelessWidget {
               context,
               title: context.tr('iadeislem', 'İade İşlemleri'),
               icon: Icons.assignment_return_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFFEF4444), Color(0xFF991B1B)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFFEF4444),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IadeIslemleriView())),
             ),
 
@@ -60,7 +56,7 @@ class UrunYonetimiView extends StatelessWidget {
               context,
               title: context.tr('stokislem', 'Stok İşlemleri'),
               icon: Icons.manage_search_rounded,
-              gradient: AppTheme.orangeGradient,
+              color: AppTheme.accentOrange,
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StokIslemleriView())),
             ),
 
@@ -69,11 +65,7 @@ class UrunYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Etiket İşlemleri', 'Etiket İşlemleri'),
               icon: Icons.qr_code_2_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8D6E63), Color(0xFF4E342E)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFF8D6E63),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EtiketSecimView())),
             ),
 
@@ -82,7 +74,7 @@ class UrunYonetimiView extends StatelessWidget {
               context,
               title: context.tr('fiyatgor', 'Fiyat Gör'),
               icon: Icons.center_focus_strong_rounded,
-              gradient: AppTheme.primaryGradient,
+              color: AppTheme.primaryBlue,
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FiyatGorView())),
             ),
           ],
@@ -96,7 +88,7 @@ class UrunYonetimiView extends StatelessWidget {
     required String title,
     String? subtitle,
     required IconData icon,
-    required LinearGradient gradient,
+    required Color color,
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -123,7 +115,7 @@ class UrunYonetimiView extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: gradient,
+                    color: color,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(icon, color: Colors.white, size: 26),
@@ -189,11 +181,7 @@ class IadeIslemleriView extends StatelessWidget {
               context,
               title: context.tr('Kabul İade İşlemleri', 'Kabul İade İşlemleri'),
               icon: Icons.assignment_return_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2DD4BF), Color(0xFF0D9488)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFF0D9488),
               onTap: () {
                 Navigator.push(
                   context,
@@ -206,11 +194,7 @@ class IadeIslemleriView extends StatelessWidget {
               context,
               title: context.tr('Satış İade İşlemleri', 'Satış İade İşlemleri'),
               icon: Icons.monetization_on_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2DD4BF), Color(0xFF0D9488)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFF0284C7),
               onTap: () {
                 Navigator.push(
                   context,
@@ -228,13 +212,13 @@ class IadeIslemleriView extends StatelessWidget {
     BuildContext context, {
     required String title,
     required IconData icon,
-    required LinearGradient gradient,
+    required Color color,
     required VoidCallback onTap,
   }) {
     return Container(
       height: 110,
       decoration: BoxDecoration(
-        gradient: gradient,
+        color: color,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Material(

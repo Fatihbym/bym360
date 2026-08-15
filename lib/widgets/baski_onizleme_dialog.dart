@@ -587,7 +587,7 @@ class _BaskiOnizlemeDialogState extends State<BaskiOnizlemeDialog> {
                       backgroundColor: AppTheme.accentGreen,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      elevation: 2,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     icon: _isPrinting

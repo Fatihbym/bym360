@@ -89,7 +89,7 @@ class SiparisYonetimiView extends StatelessWidget {
               context,
               title: context.tr('aliniansiparis', 'Alınan Siparişler'),
               icon: Icons.shopping_cart_checkout_rounded,
-              gradient: AppTheme.primaryGradient,
+              color: AppTheme.primaryBlue,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BelgeListeleView(belgeTuru: 'ALINAN_SIPARIS')),
@@ -101,7 +101,7 @@ class SiparisYonetimiView extends StatelessWidget {
               context,
               title: context.tr('verilensiparis', 'Verilen Siparişler'),
               icon: Icons.local_mall_rounded,
-              gradient: AppTheme.greenGradient,
+              color: AppTheme.accentGreen,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BelgeListeleView(belgeTuru: 'VERILEN_SIPARIS')),
@@ -113,7 +113,7 @@ class SiparisYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Alınan Siparişlerin Sevkiyatı', 'Alınan Siparişlerin Sevkiyatı'),
               icon: Icons.local_shipping_rounded,
-              gradient: AppTheme.cyanGradient,
+              color: AppTheme.accentCyan,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SiparisSevkiyatView(mod: 'sevk')),
@@ -125,7 +125,7 @@ class SiparisYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Verilen Siparişlerin Teslim Alınması', 'Verilen Siparişlerin Teslim Alınması'),
               icon: Icons.archive_rounded,
-              gradient: AppTheme.purpleGradient,
+              color: AppTheme.accentPurple,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SiparisSevkiyatView(mod: 'teslimal')),
@@ -137,7 +137,7 @@ class SiparisYonetimiView extends StatelessWidget {
               context,
               title: context.tr('Atamalı Sipariş Teslim Alma', 'Atamalı Sipariş Teslim Alma'),
               icon: Icons.assignment_turned_in_rounded,
-              gradient: AppTheme.orangeGradient,
+              color: AppTheme.accentOrange,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AtamaliSiparisView()),
@@ -155,7 +155,7 @@ class SiparisYonetimiView extends StatelessWidget {
     required String title,
     String? subtitle,
     required IconData icon,
-    required LinearGradient gradient,
+    required Color color,
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -182,7 +182,7 @@ class SiparisYonetimiView extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: gradient,
+                    color: color,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(icon, color: Colors.white, size: 26),

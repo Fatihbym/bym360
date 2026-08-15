@@ -21,7 +21,7 @@ class ModuleItem {
   final String subtitleKey;
   final String subtitleDefault;
   final IconData icon;
-  final LinearGradient gradient;
+  final Color color;
   final List<String> keywords;
   final Widget Function(BuildContext) targetBuilder;
 
@@ -31,7 +31,7 @@ class ModuleItem {
     required this.subtitleKey,
     required this.subtitleDefault,
     required this.icon,
-    required this.gradient,
+    required this.color,
     required this.keywords,
     required this.targetBuilder,
   });
@@ -83,7 +83,7 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
         subtitleKey: 'depo_sub',
         subtitleDefault: 'Sayım, Mal Kabul, Transfer',
         icon: Icons.warehouse_rounded,
-        gradient: AppTheme.primaryGradient,
+        color: AppTheme.primaryBlue,
         keywords: ['depo', 'sayım', 'malkabul', 'transfer', 'stok', 'ambarı', 'kabul'],
         targetBuilder: (_) => const DepoYonetimiView(),
       ),
@@ -93,11 +93,7 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
         subtitleKey: 'urun_sub',
         subtitleDefault: 'Kabul, Satış, İade, Stok, Etiket & Fiyat Gör',
         icon: Icons.inventory_2_rounded,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: const Color(0xFF3B82F6),
         keywords: ['ürün', 'urun', 'fiyat', 'stok', 'etiket', 'barkod', 'mal'],
         targetBuilder: (_) => const UrunYonetimiView(),
       ),
@@ -107,11 +103,7 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
         subtitleKey: 'siparis_sub',
         subtitleDefault: 'Alınan/Verilen Sipariş, Sevkiyat & Teslim Alma',
         icon: Icons.shopping_bag_rounded,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: const Color(0xFF8B5CF6),
         keywords: ['sipariş', 'siparis', 'sevk', 'teslimat', 'alınan', 'verilen'],
         targetBuilder: (_) => const SiparisYonetimiView(),
       ),
@@ -121,11 +113,7 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
         subtitleKey: 'finans_sub',
         subtitleDefault: 'Kasa, Banka Tahsilat, Ekstre, Rapor & Cari Ekle',
         icon: Icons.account_balance_wallet_rounded,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF10B981), Color(0xFF047857)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: const Color(0xFF10B981),
         keywords: ['finans', 'kasa', 'banka', 'tahsilat', 'ekstre', 'bakiye', 'nakit', 'pos', 'kredi kartı'],
         targetBuilder: (_) => const FinansYonetimiView(),
       ),
@@ -192,11 +180,6 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
                 MaterialPageRoute(builder: (context) => const SistemAyarlariView()),
               );
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline_rounded),
-            tooltip: context.tr('hakkinda', 'Hakkında'),
-            onPressed: () => AppDialogs.showHakkindaDialog(context),
           ),
           IconButton(
             icon: const Icon(Icons.power_settings_new_rounded, color: AppTheme.accentRed),
@@ -276,7 +259,7 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
                           context,
                           title: context.tr(item.titleKey, item.titleDefault),
                           icon: item.icon,
-                          gradient: item.gradient,
+                          color: item.color,
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: item.targetBuilder),
@@ -554,7 +537,7 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
     BuildContext context, {
     required String title,
     required IconData icon,
-    required LinearGradient gradient,
+    required Color color,
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -583,7 +566,7 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    gradient: gradient,
+                    color: color,
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Icon(icon, size: 30, color: Colors.white),
