@@ -62,7 +62,7 @@ class AppNotification {
   /// Yazdırma işlemi için canlı durum bildirim barı başlatır
   static DynamicIslandHandle showPrinting(
     BuildContext context, {
-    String title = 'Yazıcıya Gönderiliyor...',
+    String title = 'Yazıcıya Gönderiliyor',
     String? docName,
     String? printerInfo,
   }) {
@@ -214,6 +214,8 @@ class _DynamicIslandToastWidgetState extends State<_DynamicIslandToastWidget> wi
   double _progress = 0.2;
   Timer? _dismissTimer;
   Timer? _autoProgressTimer;
+  Timer? _collapseTimer;
+  bool _isCollapsed = false;
 
   @override
   void initState() {
@@ -245,6 +247,14 @@ class _DynamicIslandToastWidgetState extends State<_DynamicIslandToastWidget> wi
 
     if (_type == DynamicIslandType.printing) {
       _startAutoProgress();
+      // Auto-collapse to the right notch if printing takes longer than 2.0 seconds
+      _collapseTimer = Timer(const Duration(milliseconds: 2000), () {
+        if (mounted && _type == DynamicIslandType.printing) {
+          setState(() {
+            _isCollapsed = true;
+          });
+        }
+      });
     } else if (widget.duration != null) {
       _scheduleDismiss(widget.duration!);
     }
@@ -281,10 +291,12 @@ class _DynamicIslandToastWidgetState extends State<_DynamicIslandToastWidget> wi
   }) {
     if (!mounted) return;
     _autoProgressTimer?.cancel();
+    _collapseTimer?.cancel();
     setState(() {
       _type = type;
       _title = title;
       _message = message;
+      _isCollapsed = false; // Expand back to show the final result!
       if (type == DynamicIslandType.success) {
         _progress = 1.0;
       }
@@ -306,6 +318,7 @@ class _DynamicIslandToastWidgetState extends State<_DynamicIslandToastWidget> wi
 
   void _dismiss() async {
     _autoProgressTimer?.cancel();
+    _collapseTimer?.cancel();
     await _entryController.reverse();
     if (mounted) {
       widget.onDismissed();
@@ -315,6 +328,7 @@ class _DynamicIslandToastWidgetState extends State<_DynamicIslandToastWidget> wi
   @override
   void dispose() {
     _autoProgressTimer?.cancel();
+    _collapseTimer?.cancel();
     _dismissTimer?.cancel();
     _entryController.dispose();
     _rotateController.dispose();
@@ -353,7 +367,7 @@ class _DynamicIslandToastWidgetState extends State<_DynamicIslandToastWidget> wi
   String get _defaultTitle {
     switch (_type) {
       case DynamicIslandType.printing:
-        return 'Yazıcıya Gönderiliyor...';
+        return 'Yazıcıya Gönderiliyor';
       case DynamicIslandType.success:
         return 'Başarılı';
       case DynamicIslandType.error:
@@ -365,16 +379,181 @@ class _DynamicIslandToastWidgetState extends State<_DynamicIslandToastWidget> wi
     }
   }
 
+  Widget _buildCollapsedNotch(Color color) {
+    return CustomPaint(
+      foregroundPainter: _AnimatedRotatingBorderPainter(
+        animation: _rotateController,
+        color: color,
+        borderRadius: 24.0,
+      ),
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.only(left: 10, right: 18, top: 12, bottom: 12),
+        decoration: const BoxDecoration(
+          color: Color(0xFF0F172A), // Obsidian Dark
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            bottomLeft: Radius.circular(24),
+          ),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                value: _progress,
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                backgroundColor: Colors.white10,
+              ),
+            ),
+            Icon(Icons.print_rounded, color: color, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandedIsland(BuildContext context, Color color, bool isPrinting) {
+    return CustomPaint(
+      foregroundPainter: _AnimatedRotatingBorderPainter(
+        animation: _rotateController,
+        color: color,
+        borderRadius: 30.0,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A).withValues(alpha: 0.95), // Obsidian Dark Glass
+          borderRadius: BorderRadius.circular(30), // Dynamic Island Pill Radius
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Dynamic Island Left Glow Badge
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color.withValues(alpha: 0.5), width: 1.0),
+                  ),
+                  child: isPrinting
+                      ? SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
+                          ),
+                        )
+                      : Icon(_iconData, color: color, size: 22),
+                ),
+                const SizedBox(width: 12),
+                // Message Text
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _title ?? _defaultTitle,
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                                letterSpacing: 0.3,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isPrinting) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              '%${(_progress * 100).toInt()}',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _message,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.95),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Close / Slide up hint
+                if (!isPrinting)
+                  Icon(
+                    Icons.keyboard_arrow_up_rounded,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    size: 20,
+                  ),
+                if (isPrinting)
+                  Icon(
+                    Icons.keyboard_arrow_right_rounded,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    size: 20,
+                  ),
+              ],
+            ),
+            // Sadece yazdırma işlemi devam ederken ince progress bar
+            if (isPrinting) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: _progress,
+                  minHeight: 3,
+                  backgroundColor: Colors.white.withValues(alpha: 0.15),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
     final color = _accentColor;
     final isPrinting = _type == DynamicIslandType.printing;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-    return Positioned(
-      top: topPadding + 10,
-      left: 16,
-      right: 16,
+    final double leftPos = _isCollapsed ? screenWidth - 55.0 : 16.0;
+    final double rightPos = _isCollapsed ? -12.0 : 16.0;
+    final double topPos = topPadding + 10.0;
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOutCubic,
+      top: topPos,
+      left: leftPos,
+      right: rightPos,
       child: Material(
         color: Colors.transparent,
         child: AnimatedBuilder(
@@ -391,122 +570,17 @@ class _DynamicIslandToastWidgetState extends State<_DynamicIslandToastWidget> wi
                     }
                   },
                   onTap: () {
-                    if (!isPrinting) {
+                    if (isPrinting) {
+                      setState(() {
+                        _isCollapsed = !_isCollapsed;
+                      });
+                    } else {
                       _dismiss();
                     }
                   },
-                  child: CustomPaint(
-                    foregroundPainter: _AnimatedRotatingBorderPainter(
-                      animation: _rotateController,
-                      color: color,
-                      borderRadius: 30.0,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A).withValues(alpha: 0.95), // Obsidian Dark Glass
-                        borderRadius: BorderRadius.circular(30), // Dynamic Island Pill Radius
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Dynamic Island Left Glow Badge
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.2),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: color.withValues(alpha: 0.5), width: 1.0),
-                                ),
-                                child: isPrinting
-                                    ? SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(color),
-                                        ),
-                                      )
-                                    : Icon(_iconData, color: color, size: 22),
-                              ),
-                              const SizedBox(width: 12),
-                              // Message Text
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            _title ?? _defaultTitle,
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: color,
-                                              letterSpacing: 0.3,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        if (isPrinting) ...[
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            '%${(_progress * 100).toInt()}',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                              color: color,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _message,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        color: Colors.white.withValues(alpha: 0.95),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Close / Slide up hint
-                              if (!isPrinting)
-                                Icon(
-                                  Icons.keyboard_arrow_up_rounded,
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                  size: 20,
-                                ),
-                            ],
-                          ),
-                          // Sadece yazdırma işlemi devam ederken ince progress bar
-                          if (isPrinting) ...[
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(2),
-                              child: LinearProgressIndicator(
-                                value: _progress,
-                                minHeight: 3,
-                                backgroundColor: Colors.white.withValues(alpha: 0.15),
-                                valueColor: AlwaysStoppedAnimation<Color>(color),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
+                  child: _isCollapsed
+                      ? _buildCollapsedNotch(color)
+                      : _buildExpandedIsland(context, color, isPrinting),
                 ),
               ),
             );

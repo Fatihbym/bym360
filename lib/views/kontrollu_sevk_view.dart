@@ -5,6 +5,7 @@ import '../core/theme/app_theme.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../widgets/barcode_scanner_view.dart';
+import '../widgets/dynamic_island_toast.dart';
 
 class KontrolluSevkView extends StatefulWidget {
   final bool isGonderim;
@@ -44,17 +45,29 @@ class _KontrolluSevkViewState extends State<KontrolluSevkView> {
     final miktar = double.tryParse(_miktarController.text.trim()) ?? 1.0;
     if (barkod.isEmpty) return;
 
-    String stokAdi = 'Stok ($barkod)';
+    String stokAdi = '';
     int stokId = 0;
     double fiyat = 0.0;
     try {
       final res = await ApiService.getStokAra(barkod);
-      if (res.isNotEmpty) {
-        stokAdi = res.first.stokAdi;
-        stokId = res.first.stokId;
-        fiyat = res.first.satisFiyat;
+      final valid = res.where((s) => s.stokId > 0 && s.stokAdi.isNotEmpty).toList();
+      if (valid.isNotEmpty) {
+        stokAdi = valid.first.stokAdi;
+        stokId = valid.first.stokId;
+        fiyat = valid.first.satisFiyat;
       }
     } catch (_) {}
+
+    if (stokId <= 0) {
+      if (mounted) {
+        AppNotification.showError(
+          context,
+          'Girilen "$barkod" kodlu ürün veritabanında bulunamadı.',
+          title: 'Ürün Bulunamadı',
+        );
+      }
+      return;
+    }
 
     final index = _sevkKalemleri.indexWhere((k) => k['barkod'] == barkod);
     setState(() {

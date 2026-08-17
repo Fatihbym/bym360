@@ -30,7 +30,11 @@ class _BelgeListeleViewState extends State<BelgeListeleView> {
 
   Future<void> _loadBelgeler({bool allData = false}) async {
     setState(() => _isLoading = true);
-    final result = await ApiService.getBelgeListele(tur: allData ? '' : widget.belgeTuru);
+    final result = await ApiService.getBelgeListele(
+      tur: widget.belgeTuru,
+      gunLimit: allData ? 3650 : 30,
+      limit: allData ? 1000 : 100,
+    );
     if (mounted) {
       setState(() {
         _belgeList = result;
@@ -91,6 +95,12 @@ class _BelgeListeleViewState extends State<BelgeListeleView> {
       final q = _searchQuery.toLowerCase();
       return b.belgeNo.toLowerCase().contains(q) || b.cariAdi.toLowerCase().contains(q);
     }).toList();
+
+    final showTypeColumn = widget.belgeTuru.isEmpty;
+    final int tarihFlex = showTypeColumn ? 2 : 4;
+    final int noFlex = showTypeColumn ? 2 : 3;
+    const int depoFlex = 3;
+    const int cariFlex = 3;
 
     return Scaffold(
       appBar: AppBar(
@@ -206,11 +216,12 @@ class _BelgeListeleViewState extends State<BelgeListeleView> {
             color: isDark ? AppTheme.darkSurface : Colors.grey.shade200,
             child: Row(
               children: [
-                Expanded(flex: 2, child: Text('Tarih', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
-                Expanded(flex: 2, child: Text('No', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
-                Expanded(flex: 2, child: Text('Tür', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
-                Expanded(flex: 3, child: Text('Depo', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
-                Expanded(flex: 3, child: Text('Cari', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
+                Expanded(flex: tarihFlex, child: Text('Tarih', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
+                Expanded(flex: noFlex, child: Text('No', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
+                if (showTypeColumn)
+                  Expanded(flex: 2, child: Text('Tür', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
+                Expanded(flex: depoFlex, child: Text('Depo', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
+                Expanded(flex: cariFlex, child: Text('Cari', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
                 SizedBox(width: 40, child: Text('Onay', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold))),
               ],
             ),
@@ -246,11 +257,12 @@ class _BelgeListeleViewState extends State<BelgeListeleView> {
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 title: Row(
                                   children: [
-                                    Expanded(flex: 2, child: Text(item.tarih.isNotEmpty ? item.tarih : '-', style: GoogleFonts.inter(fontSize: 11))),
-                                    Expanded(flex: 2, child: Text(item.belgeNo.isNotEmpty ? item.belgeNo : '#${item.belgeId}', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold))),
-                                    Expanded(flex: 2, child: Text(item.belgeTurAdi.isNotEmpty ? item.belgeTurAdi : widget.belgeTuru, style: GoogleFonts.inter(fontSize: 11), overflow: TextOverflow.ellipsis)),
-                                    Expanded(flex: 3, child: Text(item.cikisDepo.isNotEmpty ? item.cikisDepo : (item.varisDepo.isNotEmpty ? item.varisDepo : '-'), style: GoogleFonts.inter(fontSize: 11), overflow: TextOverflow.ellipsis)),
-                                    Expanded(flex: 3, child: Text(item.cariAdi.isNotEmpty ? item.cariAdi : '-', style: GoogleFonts.inter(fontSize: 11), overflow: TextOverflow.ellipsis)),
+                                    Expanded(flex: tarihFlex, child: Text(item.tarih.isNotEmpty ? item.tarih : '-', style: GoogleFonts.inter(fontSize: 11))),
+                                    Expanded(flex: noFlex, child: Text(item.belgeNo.isNotEmpty ? item.belgeNo : '#${item.belgeId}', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold))),
+                                    if (showTypeColumn)
+                                      Expanded(flex: 2, child: Text(item.belgeTurAdi.isNotEmpty ? item.belgeTurAdi : widget.belgeTuru, style: GoogleFonts.inter(fontSize: 11), overflow: TextOverflow.ellipsis)),
+                                    Expanded(flex: depoFlex, child: Text(item.cikisDepo.isNotEmpty ? item.cikisDepo : (item.varisDepo.isNotEmpty ? item.varisDepo : '-'), style: GoogleFonts.inter(fontSize: 11), overflow: TextOverflow.ellipsis)),
+                                    Expanded(flex: cariFlex, child: Text(item.cariAdi.isNotEmpty ? item.cariAdi : '-', style: GoogleFonts.inter(fontSize: 11), overflow: TextOverflow.ellipsis)),
                                     const SizedBox(
                                       width: 40,
                                       child: Icon(

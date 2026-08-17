@@ -7,6 +7,7 @@ import '../widgets/baski_onizleme_dialog.dart';
 import '../widgets/dynamic_island_toast.dart';
 import 'belge_kapat_view.dart';
 import 'urun_ekle_view.dart';
+import '../l10n/app_localizations.dart';
 
 class BelgeDetayView extends StatefulWidget {
   final int belgeId;
@@ -35,6 +36,7 @@ class BelgeDetayView extends StatefulWidget {
 class _BelgeDetayViewState extends State<BelgeDetayView> {
   final List<GetBelgeIcerik> _urunList = [];
   bool _isLoading = true;
+  GetBelgeGetir? _belgeHeader;
 
   @override
   void initState() {
@@ -47,9 +49,18 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
     final turId = widget.belgeTurId > 0
         ? widget.belgeTurId
         : ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
-    final items = await ApiService.getBelgeDetay(turId, widget.belgeId);
+    
+    // Fetch both document header and details
+    final headerFuture = ApiService.belgeGetir(turId, widget.belgeId);
+    final itemsFuture = ApiService.getBelgeDetay(turId, widget.belgeId);
+    
+    final results = await Future.wait([headerFuture, itemsFuture]);
+    final header = results[0] as GetBelgeGetir?;
+    final items = results[1] as List<GetBelgeIcerik>;
+
     if (mounted) {
       setState(() {
+        _belgeHeader = header;
         _urunList.clear();
         _urunList.addAll(items);
         _isLoading = false;
@@ -88,26 +99,55 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
           ),
           PopupMenuButton<String>(
             onSelected: (val) async {
-              final messenger = ScaffoldMessenger.of(context);
               switch (val) {
                 case 'onay':
-                  final res = await ApiService.belgeOnay(widget.belgeId);
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(res ? 'Belge Onaylandı' : 'Belge onaylanamadı!')),
-                  );
+                  final turId = widget.belgeTurId > 0
+                      ? widget.belgeTurId
+                      : ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
+                  final res = await ApiService.belgeOnay(tur: turId, id: widget.belgeId);
+                  if (!mounted) return;
+                  if (res['success'] == true) {
+                    AppNotification.showSuccess(
+                      this.context,
+                      res['message'] ?? 'Belge onaylandı',
+                      title: 'İşlem Başarılı',
+                    );
+                    _loadDetay();
+                  } else {
+                    AppNotification.showError(
+                      this.context,
+                      res['message'] ?? 'Belge onaylanamadı!',
+                      title: 'İşlem Başarısız',
+                    );
+                  }
                   break;
                 case 'iptal':
-                  final res = await ApiService.belgeOnayIptal(widget.belgeId);
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(res ? 'Belge Onay İptal Edildi' : 'İptal işlemi başarısız!')),
-                  );
+                  final turId = widget.belgeTurId > 0
+                      ? widget.belgeTurId
+                      : ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
+                  final res = await ApiService.belgeOnayIptal(tur: turId, id: widget.belgeId);
+                  if (!mounted) return;
+                  if (res['success'] == true) {
+                    AppNotification.showSuccess(
+                      this.context,
+                      res['message'] ?? 'Belge onay iptal edildi',
+                      title: 'İşlem Başarılı',
+                    );
+                    _loadDetay();
+                  } else {
+                    AppNotification.showError(
+                      this.context,
+                      res['message'] ?? 'Onay iptal işlemi başarısız!',
+                      title: 'İşlem Başarısız',
+                    );
+                  }
                   break;
                 case 'yazdir':
                   _showBaskiOnizleme();
                   break;
                 case 'kapat':
                   Navigator.push(
-                    context,
+                    this.context,
                     MaterialPageRoute(
                       builder: (context) => BelgeKapatView(
                         initialBelge: GetBelgeListele(
@@ -127,10 +167,10 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'onay', child: Text('Belge Onay')),
-              const PopupMenuItem(value: 'iptal', child: Text('Onay İptal')),
-              const PopupMenuItem(value: 'yazdir', child: Text('Belge Önizle & Yazdır')),
-              const PopupMenuItem(value: 'kapat', child: Text('Belge Kapat / Tahsilat')),
+              PopupMenuItem(value: 'onay', child: Text(context.tr('belge_onay', 'Belge Onay'))),
+              PopupMenuItem(value: 'iptal', child: Text(context.tr('onay_iptal', 'Onay İptal'))),
+              PopupMenuItem(value: 'yazdir', child: Text(context.tr('belge_onizle_yazdir', 'Belge Önizle & Yazdır'))),
+              PopupMenuItem(value: 'kapat', child: Text(context.tr('belge_kapat_tahsilat', 'Belge Kapat / Tahsilat'))),
             ],
           ),
         ],
@@ -143,6 +183,36 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
             color: AppTheme.primaryBlue.withValues(alpha: 0.06),
             child: Column(
               children: [
+                if (_belgeHeader?.onay == 1) ...[
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentGreen.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppTheme.accentGreen.withValues(alpha: 0.5), width: 1.0),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: AppTheme.accentGreen, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            'ONAYLI BELGE (DÜZENLENEMEZ)',
+                            style: GoogleFonts.outfit(
+                              color: AppTheme.accentGreen,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 _infoRow('Belge No', widget.belgeNo.isNotEmpty ? widget.belgeNo : '#${widget.belgeId}'),
                 _infoRow('Belge Türü', widget.belgeTuru),
                 _infoRow('Cari', widget.cariAdi.isNotEmpty ? widget.cariAdi : '-'),
@@ -159,9 +229,9 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Ürün Satırları (${_urunList.length})',
+                Text('${context.tr('urun_satirlari', 'Ürün Satırları')} (${_urunList.length})',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                Text('Toplam Miktar: ${_urunList.fold<double>(0, (s, e) => s + e.miktar).toStringAsFixed(0)}'),
+                Text('${context.tr('toplam_miktar', 'Toplam Miktar')}: ${_urunList.fold<double>(0, (s, e) => s + e.miktar).toStringAsFixed(0)}'),
               ],
             ),
           ),
@@ -169,14 +239,14 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _urunList.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.inventory_outlined, size: 48, color: Colors.grey),
-                            SizedBox(height: 8),
-                            Text('Bu belgede henüz ürün yok.',
-                                style: TextStyle(color: Colors.grey)),
+                            const Icon(Icons.inventory_outlined, size: 48, color: Colors.grey),
+                            const SizedBox(height: 8),
+                            Text(context.tr('belgede_urun_yok', 'Bu belgede henüz ürün yok.'),
+                                style: const TextStyle(color: Colors.grey)),
                           ],
                         ),
                       )
@@ -201,7 +271,7 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                               padding: const EdgeInsets.only(right: 20),
                               child: const Icon(Icons.delete_forever_rounded, color: Colors.white),
                             ),
-                            direction: DismissDirection.endToStart,
+                            direction: _belgeHeader?.onay == 1 ? DismissDirection.none : DismissDirection.endToStart,
                             confirmDismiss: (_) => _silSatir(item, stokTitle, turId),
                             child: Card(
                               child: ListTile(
@@ -220,7 +290,15 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                                             color: AppTheme.accentGreen)),
                                   ],
                                 ),
-                                onTap: () => _showSatirGuncelleDialog(item),
+                                onTap: _belgeHeader?.onay == 1
+                                    ? () {
+                                        AppNotification.showWarning(
+                                          this.context,
+                                          'Onaylı belgelerde değişiklik yapılamaz.',
+                                          title: 'Belge Onaylı',
+                                        );
+                                      }
+                                    : () => _showSatirGuncelleDialog(item),
                               ),
                             ),
                           );
@@ -229,25 +307,27 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => UrunEkleView(
-                belgeTuru: widget.belgeTuru,
-                belgeNo: widget.belgeNo,
-                cariAdi: widget.cariAdi,
-                belgeId: widget.belgeId,
-              ),
+      floatingActionButton: _belgeHeader?.onay == 1
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () async {
+                await Navigator.push(
+                  this.context,
+                  MaterialPageRoute(
+                    builder: (context) => UrunEkleView(
+                      belgeTuru: widget.belgeTuru,
+                      belgeNo: widget.belgeNo,
+                      cariAdi: widget.cariAdi,
+                      belgeId: widget.belgeId,
+                    ),
+                  ),
+                );
+                _loadDetay();
+              },
+              icon: const Icon(Icons.add),
+              label: Text(context.tr('urun_ekle', 'ÜRÜN EKLE'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              backgroundColor: AppTheme.primaryBlue,
             ),
-          );
-          _loadDetay();
-        },
-        icon: const Icon(Icons.add),
-        label: Text('ÜRÜN EKLE', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: AppTheme.primaryBlue,
-      ),
     );
   }
 
@@ -265,18 +345,26 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
   }
 
   Future<bool> _silSatir(GetBelgeIcerik item, String stokTitle, int turId) async {
+    if (_belgeHeader?.onay == 1) {
+      AppNotification.showWarning(
+        context,
+        context.tr('onayli_belge_satir_silinemez', 'Onaylı belgelerde satır silinemez.'),
+        title: context.tr('belge_onayli', 'Belge Onaylı'),
+      );
+      return false;
+    }
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Satır Silinsin mi?'),
-        content: Text('$stokTitle satırı belgeden silinecektir.'),
+        title: Text(context.tr('satir_silinsin_mi', 'Satır Silinsin mi?')),
+        content: Text('$stokTitle ${context.tr('satir_belgeden_silinecek', 'satırı belgeden silinecektir.')}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Vazgeç')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('vazgec', 'Vazgeç'))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentRed, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Sil'),
+            child: Text(context.tr('sil', 'Sil')),
           ),
         ],
       ),
@@ -305,6 +393,14 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
   }
 
   void _showSatirGuncelleDialog(GetBelgeIcerik item) {
+    if (_belgeHeader?.onay == 1) {
+      AppNotification.showWarning(
+        context,
+        'Onaylı belgelerde değişiklik yapılamaz.',
+        title: 'Belge Onaylı',
+      );
+      return;
+    }
     final miktarCtrl = TextEditingController(
       text: item.miktar % 1 == 0 ? item.miktar.toInt().toString() : item.miktar.toString(),
     );
@@ -371,7 +467,7 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
           actions: [
             TextButton(
               onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
-              child: const Text('İptal'),
+              child: Text(context.tr('iptal', 'İptal')),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -386,7 +482,7 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                       final newFiyat = double.tryParse(fiyatCtrl.text.trim().replaceAll(',', '.')) ?? item.birimFiyat;
 
                       if (newMiktar <= 0) {
-                        AppNotification.showWarning(context, 'Lütfen 0\'dan büyük bir miktar giriniz.', title: 'Geçersiz Miktar');
+                        AppNotification.showWarning(context, context.tr('gecersiz_miktar_mesaj', 'Lütfen 0\'dan büyük bir miktar giriniz.'), title: context.tr('gecersiz_miktar', 'Geçersiz Miktar'));
                         return;
                       }
 
@@ -419,20 +515,20 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                         if (!mounted) return;
                         AppNotification.showSuccess(
                           context,
-                          '${item.stokAdi} satırı başarıyla güncellendi.',
-                          title: 'Satır Güncellendi',
+                          '${item.stokAdi} ${context.tr('satir_guncellendi', 'satırı başarıyla güncellendi.')}',
+                          title: context.tr('satir_guncellendi_baslik', 'Satır Güncellendi'),
                         );
                       } else {
                         AppNotification.showError(
                           context,
-                          'Satır güncellenirken sunucudan hata alındı.',
-                          title: 'Güncelleme Başarısız',
+                          context.tr('guncelleme_hatasi', 'Satır güncellenirken sunucudan hata alındı.'),
+                          title: context.tr('guncelleme_basarisiz', 'Güncelleme Başarısız'),
                         );
                       }
                     },
               child: isSubmitting
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Kaydet'),
+                  : Text(context.tr('kaydet', 'Kaydet')),
             ),
           ],
         ),

@@ -104,7 +104,7 @@ class PrinterService {
     return list;
   }
 
-  /// Yerel ağdaki IP yazıcılarını tarar (Belirli subnet üzerinde Port 9100 testi)
+  /// Yerel ağdaki IP yazıcılarını tarar (Belirli subnet üzerinde Port 9100 ve 631 testi)
   static Future<List<DiscoveredPrinter>> scanNetworkPrinters({
     String baseSubnet = '192.168.1',
     int startRange = 1,
@@ -116,10 +116,10 @@ class PrinterService {
   }
 
   /// Algoritmik olarak cihazın aktif ağ kartlarını ve yerel subnet'leri tespit edip
-  /// ağdaki tüm IP yazıcıları (Port 9100, 631, 80) yüksek hızlı paralel taramayla bulur.
+  /// ağdaki tüm IP yazıcıları (Port 9100, 631) yüksek hızlı paralel taramayla bulur.
   static Future<List<DiscoveredPrinter>> autoDiscoverNetworkPrinters({
     int defaultPort = 9100,
-    Duration timeout = const Duration(milliseconds: 320),
+    Duration timeout = const Duration(milliseconds: 300),
   }) async {
     final discovered = <DiscoveredPrinter>[];
     final subnetsToScan = <String>{};
@@ -161,83 +161,71 @@ class PrinterService {
       }
     }
 
-    // 3. Subnet'leri yüksek hızlı paralel (batch size 64) soketler ile tara
-    const batchSize = 64;
+    // 3. Subnet'leri yüksek hızlı paralel (batch size 128) ve paralel subnet tarama ile tara
+    const batchSize = 128;
+    final List<Future<void>> subnetTasks = [];
 
     for (final subnet in subnetsToScan) {
-      for (int i = 1; i <= 254; i += batchSize) {
-        final end = (i + batchSize - 1) > 254 ? 254 : (i + batchSize - 1);
-        final batchFutures = <Future>[];
+      subnetTasks.add(() async {
+        for (int i = 1; i <= 254; i += batchSize) {
+          final end = (i + batchSize - 1) > 254 ? 254 : (i + batchSize - 1);
+          final batchFutures = <Future<void>>[];
 
-        for (int j = i; j <= end; j++) {
-          final ip = '$subnet.$j';
-          if (discovered.any((d) => d.ip == ip)) continue;
+          for (int j = i; j <= end; j++) {
+            final ip = '$subnet.$j';
+            if (discovered.any((d) => d.ip == ip)) continue;
 
-          batchFutures.add(_probeSingleIp(ip, defaultPort, timeout).then((printer) {
-            if (printer != null && !discovered.any((d) => d.ip == printer.ip)) {
-              discovered.add(printer);
-            }
-          }));
+            batchFutures.add(
+              _probeSingleIp(ip, defaultPort, timeout).then((printer) {
+                if (printer != null && !discovered.any((d) => d.ip == printer.ip)) {
+                  discovered.add(printer);
+                }
+              }),
+            );
+          }
+
+          await Future.wait(batchFutures);
         }
-
-        await Future.wait(batchFutures);
-      }
+      }());
     }
 
+    await Future.wait(subnetTasks);
     return discovered;
   }
 
-  /// Tek bir IP adresini standart yazıcı portları üzerinden (9100, 631, 80, 443) test eder
+  /// Tek bir IP adresini standart yazıcı portları üzerinden (9100, 631) paralel test eder
   static Future<DiscoveredPrinter?> _probeSingleIp(
     String ip,
     int defaultPort,
     Duration timeout,
   ) async {
-    // 1. Port 9100 (RAW / JetDirect / ESC-POS / Thermal / Laser)
-    try {
-      final s = await Socket.connect(ip, defaultPort, timeout: timeout);
-      s.destroy();
+    // Port 9100 ve 631'i paralel olarak test et
+    final results = await Future.wait([
+      _tryConnectPort(ip, defaultPort, timeout),
+      _tryConnectPort(ip, 631, timeout),
+    ]);
+
+    final connectedPort = results[0] ?? results[1];
+    if (connectedPort != null) {
       final modelName = await _resolveDynamicPrinterName(ip);
       return DiscoveredPrinter(
         name: modelName,
         type: PrinterConnectionType.network,
         ip: ip,
-        port: defaultPort,
+        port: connectedPort,
       );
-    } catch (_) {}
-
-    // 2. Port 631 (IPP / IPPS - AirPrint, CUPS, HP/Canon/Epson Network Printers)
-    try {
-      final s = await Socket.connect(ip, 631, timeout: timeout);
-      s.destroy();
-      final modelName = await _resolveDynamicPrinterName(ip);
-      return DiscoveredPrinter(
-        name: modelName,
-        type: PrinterConnectionType.network,
-        ip: ip,
-        port: 631,
-      );
-    } catch (_) {}
-
-    // 3. Port 80 / 443 / 8080 (Embedded Web Server - Sadece gerçek yazıcılar)
-    for (final port in [80, 443, 8080]) {
-      try {
-        final s = await Socket.connect(ip, port, timeout: timeout);
-        s.destroy();
-        final modelName = await _resolveDynamicPrinterName(ip);
-        // Sadece gerçek yazıcı tespiti yapıldıysa ekle (IIS/Router/Web sunucularını ele)
-        if (modelName != 'Ağ Yazıcısı' && modelName != 'Termal Ağ Yazıcısı' && !modelName.toLowerCase().contains('iis') && !modelName.toLowerCase().contains('router')) {
-          return DiscoveredPrinter(
-            name: modelName,
-            type: PrinterConnectionType.network,
-            ip: ip,
-            port: 9100,
-          );
-        }
-      } catch (_) {}
     }
-
     return null;
+  }
+
+  static Future<int?> _tryConnectPort(String ip, int port, Duration timeout) async {
+    try {
+      final s = await Socket.connect(ip, port, timeout: timeout);
+      s.destroy();
+      return port;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Ağdaki bir IP adresinin gerçek marka ve modelini dinamik olarak tespit eder

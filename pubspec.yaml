@@ -1,7 +1,7 @@
 name: bym360
 description: BYM 360 - Mobil ERP, Depo ve Stok Yönetimi Flutter Uygulaması
 publish_to: 'none'
-version: 1.1.8+171
+version: 1.1.8+172
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

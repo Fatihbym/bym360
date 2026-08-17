@@ -265,7 +265,7 @@ class _BaskiOnizlemeDialogState extends State<BaskiOnizlemeDialog> {
 
     final island = DynamicIslandNotification.showPrinting(
       context,
-      title: 'Yazıcıya Gönderiliyor...',
+      title: 'Yazıcıya Gönderiliyor',
       docName: docLabel,
       printerInfo: printerLabel,
     );

@@ -31,21 +31,34 @@ class _UrunToplamaViewState extends State<UrunToplamaView> {
       return;
     }
 
-    String stokAdi = 'Barkodlu Ürün ($barkod)';
+    String stokAdi = '';
     int stokId = 0;
     try {
       final res = await ApiService.getStokAra(barkod);
-      if (res.isNotEmpty) {
-        stokAdi = res.first.stokAdi;
-        stokId = res.first.stokId;
+      final valid = res.where((s) => s.stokId > 0 && s.stokAdi.isNotEmpty).toList();
+      if (valid.isNotEmpty) {
+        stokAdi = valid.first.stokAdi;
+        stokId = valid.first.stokId;
       } else {
         final fg = await ApiService.getFiyatGor(barkod);
-        if (fg.isNotEmpty) {
-          stokAdi = fg.first.stokAdi;
-          stokId = fg.first.stokId;
+        final validFg = fg.where((f) => f.stokId > 0 && f.stokAdi.isNotEmpty).toList();
+        if (validFg.isNotEmpty) {
+          stokAdi = validFg.first.stokAdi;
+          stokId = validFg.first.stokId;
         }
       }
     } catch (_) {}
+
+    if (stokId <= 0) {
+      if (mounted) {
+        AppNotification.showError(
+          context,
+          'Girilen "$barkod" kodlu ürün veritabanında bulunamadı.',
+          title: 'Ürün Bulunamadı',
+        );
+      }
+      return;
+    }
 
     final index = _toplananUrunler.indexWhere((u) => u['barkod'] == barkod);
     setState(() {

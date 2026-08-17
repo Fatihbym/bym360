@@ -5,6 +5,7 @@ import '../core/storage/save_settings.dart';
 import '../l10n/app_localizations.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/sound_service.dart';
 import '../widgets/barcode_scanner_view.dart';
 import '../widgets/dynamic_island_toast.dart';
 
@@ -40,6 +41,14 @@ class _UrunEkleViewState extends State<UrunEkleView> {
   bool _isSaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _barcodeController.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
     _barcodeController.dispose();
     _quantityController.dispose();
@@ -66,10 +75,15 @@ class _UrunEkleViewState extends State<UrunEkleView> {
     setState(() => _isSearching = true);
     var results = await ApiService.getStokAra(barcode);
 
+    // Filter out invalid items (e.g. error/warning responses parsed as GetStok with id <= 0 or empty fields)
+    results = results.where((s) => s.stokId > 0 && s.stokAdi.isNotEmpty && s.stokKodu.isNotEmpty).toList();
+
     if (results.isEmpty) {
       final fiyatGorList = await ApiService.getFiyatGor(barcode);
-      if (fiyatGorList.isNotEmpty) {
-        final fg = fiyatGorList.first;
+      // Filter out invalid items from fiyatGorList too
+      final validFiyatGor = fiyatGorList.where((fg) => fg.stokId > 0 && fg.stokAdi.isNotEmpty && fg.stokKodu.isNotEmpty).toList();
+      if (validFiyatGor.isNotEmpty) {
+        final fg = validFiyatGor.first;
         results = [
           GetStok(
             stokId: fg.stokId,
@@ -122,12 +136,44 @@ class _UrunEkleViewState extends State<UrunEkleView> {
         title: 'Ürün Eklendi',
       );
     } else {
+      SoundService.playError();
       AppNotification.showError(
         context,
-        'Aranan "$barcode" kodu için ürün bulunamadı.',
-        title: 'Ürün Bulunamadı',
+        context.tr('Aranan "$barcode" barkodlu ürün veritabanında bulunamadı.', 'Aranan "$barcode" barkodlu ürün veritabanında bulunamadı.'),
+        title: context.tr('Ürün Bulunamadı', 'Ürün Bulunamadı'),
       );
     }
+  }
+
+  Widget _buildPresetButton(String label, double valToAdd, bool isDark) {
+    return InkWell(
+      onTap: () {
+        final current = double.tryParse(_quantityController.text) ?? 1.0;
+        setState(() {
+          _quantityController.text = (current + valToAdd).toStringAsFixed((current + valToAdd) % 1 == 0 ? 0 : 1);
+        });
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkSurfaceElevated : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
+        ),
+      ),
+    );
   }
 
   double get _totalAmount {
@@ -197,49 +243,209 @@ class _UrunEkleViewState extends State<UrunEkleView> {
       ),
       body: Column(
         children: [
-          // Barcode Scan Bar
+          // Barcode Scan Bar & Quantity Controller
           Container(
-            padding: const EdgeInsets.all(12),
-            color: isDark ? AppTheme.darkSurface : Colors.white,
-            child: Row(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.darkSurface : Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  flex: 3,
-                  child: TextField(
-                    controller: _barcodeController,
-                    onSubmitted: (_) => _addProduct(),
-                    decoration: InputDecoration(
-                      hintText: context.tr('Barkod Okutun...', 'Barkod Okutun...'),
-                      prefixIcon: const Icon(Icons.qr_code_scanner),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.camera_alt_rounded, color: AppTheme.accentCyan),
-                        onPressed: () async {
-                          final code = await BarcodeScannerScreen.scan(context, title: context.tr('Ürün Barkod Tara', 'Ürün Barkod Tara'));
-                          if (code != null && code.isNotEmpty) {
-                            _barcodeController.text = code;
-                            _addProduct();
-                          }
-                        },
+                // Row 1: Barcode Input
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _barcodeController,
+                        onSubmitted: (_) => _addProduct(),
+                        decoration: InputDecoration(
+                          hintText: context.tr('Barkod veya Stok Kodu...', 'Barkod veya Stok Kodu...'),
+                          prefixIcon: const Icon(Icons.qr_code_scanner),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_barcodeController.text.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.clear_rounded, color: Colors.grey),
+                                  onPressed: () {
+                                    setState(() {
+                                      _barcodeController.clear();
+                                    });
+                                  },
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.camera_alt_rounded, color: AppTheme.accentCyan),
+                                onPressed: () async {
+                                  final code = await BarcodeScannerScreen.scan(context, title: context.tr('Ürün Barkod Tara', 'Ürün Barkod Tara'));
+                                  if (code != null && code.isNotEmpty) {
+                                    _barcodeController.text = code;
+                                    _addProduct();
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Container(
+                      height: 52, // Same height as input decoration
+                      width: 52,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryBlue.withValues(alpha: 0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: _isSearching ? null : _addProduct,
+                          child: Center(
+                            child: _isSearching
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 1,
-                  child: TextField(
-                    controller: _quantityController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    textAlign: TextAlign.center,
-                    decoration: InputDecoration(hintText: context.tr('Miktar', 'Miktar')),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: _isSearching
-                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.add_circle, color: AppTheme.primaryBlue, size: 36),
-                  onPressed: _isSearching ? null : _addProduct,
+                const SizedBox(height: 12),
+                // Row 2: Ergonomic Quantity Selector
+                Row(
+                  children: [
+                    Text(
+                      '${context.tr("Miktar", "Miktar")}:',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Precise Stepper Widget
+                    Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppTheme.darkInputFill : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(9),
+                                bottomLeft: Radius.circular(9),
+                              ),
+                              onTap: () {
+                                final val = double.tryParse(_quantityController.text) ?? 1.0;
+                                if (val > 1) {
+                                  setState(() {
+                                    _quantityController.text = (val - 1).toStringAsFixed(val % 1 == 0 ? 0 : 1);
+                                  });
+                                }
+                              },
+                              child: const SizedBox(
+                                width: 38,
+                                child: Icon(Icons.remove_rounded, color: AppTheme.accentRed, size: 18),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 50,
+                            alignment: Alignment.center,
+                            child: TextField(
+                              controller: _quantityController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                              decoration: const InputDecoration(
+                                filled: false,
+                                contentPadding: EdgeInsets.zero,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                              ),
+                            ),
+                          ),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(9),
+                                bottomRight: Radius.circular(9),
+                              ),
+                              onTap: () {
+                                final val = double.tryParse(_quantityController.text) ?? 1.0;
+                                setState(() {
+                                  _quantityController.text = (val + 1).toStringAsFixed(val % 1 == 0 ? 0 : 1);
+                                });
+                              },
+                              child: const SizedBox(
+                                width: 38,
+                                child: Icon(Icons.add_rounded, color: AppTheme.accentGreen, size: 18),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Preset quick addition buttons
+                    Expanded(
+                      child: SizedBox(
+                        height: 40,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          children: [
+                            _buildPresetButton('+1', 1.0, isDark),
+                            const SizedBox(width: 6),
+                            _buildPresetButton('+5', 5.0, isDark),
+                            const SizedBox(width: 6),
+                            _buildPresetButton('+10', 10.0, isDark),
+                            const SizedBox(width: 6),
+                            _buildPresetButton('+20', 20.0, isDark),
+                            const SizedBox(width: 6),
+                            _buildPresetButton('+50', 50.0, isDark),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

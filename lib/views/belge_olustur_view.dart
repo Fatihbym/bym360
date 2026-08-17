@@ -5,6 +5,7 @@ import '../core/storage/save_settings.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../widgets/cari_secim_dialog.dart';
+import '../widgets/depo_secim_dialog.dart';
 import '../widgets/dynamic_island_toast.dart';
 import 'urun_ekle_view.dart';
 
@@ -33,9 +34,31 @@ class _BelgeOlusturViewState extends State<BelgeOlusturView> {
   }
 
   void _initDepolar() {
-    final rawList = SaveSettings.tumDepolar.isNotEmpty
-        ? SaveSettings.tumDepolar
-        : SaveSettings.depoList;
+    List<GetDepo> rawList = [];
+    if (SaveSettings.tumDepolar.isNotEmpty) {
+      rawList = SaveSettings.tumDepolar;
+    } else if (SaveSettings.subeDepoList.isNotEmpty) {
+      rawList = SaveSettings.subeDepoList.map((sd) => GetDepo(
+        depoId: sd.depoId,
+        depoAdi: sd.depoAdi,
+        depoKodu: sd.depoKod,
+        subeId: sd.subeId,
+      )).toList();
+    } else if (SaveSettings.depoList.isNotEmpty) {
+      rawList = SaveSettings.depoList;
+    }
+
+    if (rawList.isEmpty && SaveSettings.depoId > 0) {
+      rawList = [
+        GetDepo(
+          depoId: SaveSettings.depoId,
+          depoAdi: SaveSettings.depoAdi.isNotEmpty ? SaveSettings.depoAdi : 'Varsayılan Depo',
+          depoKodu: '',
+          subeId: SaveSettings.subeId,
+        )
+      ];
+    }
+
     final Map<int, GetDepo> map = {};
     for (final d in rawList) {
       map[d.depoId] = d;
@@ -147,7 +170,25 @@ class _BelgeOlusturViewState extends State<BelgeOlusturView> {
       return;
     }
 
-    if (isDepoSevk && _cikisDepo != null && _varisDepo != null && _cikisDepo!.depoId == _varisDepo!.depoId) {
+    if (_cikisDepo == null) {
+      AppNotification.showWarning(
+        context,
+        'Lütfen işlem yapılacak depoyu seçiniz.',
+        title: 'Depo Seçilmedi',
+      );
+      return;
+    }
+
+    if (isDepoSevk && _varisDepo == null) {
+      AppNotification.showWarning(
+        context,
+        'Lütfen varış / hedef depoyu seçiniz.',
+        title: 'Varış Deposu Seçilmedi',
+      );
+      return;
+    }
+
+    if (isDepoSevk && _cikisDepo!.depoId == _varisDepo!.depoId) {
       AppNotification.showWarning(
         context,
         'Çıkış deposu ile Varış deposu aynı olamaz!',
@@ -241,7 +282,31 @@ class _BelgeOlusturViewState extends State<BelgeOlusturView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final rawDepoListesi = SaveSettings.tumDepolar.isNotEmpty ? SaveSettings.tumDepolar : SaveSettings.depoList;
+    List<GetDepo> rawDepoListesi = [];
+    if (SaveSettings.tumDepolar.isNotEmpty) {
+      rawDepoListesi = SaveSettings.tumDepolar;
+    } else if (SaveSettings.subeDepoList.isNotEmpty) {
+      rawDepoListesi = SaveSettings.subeDepoList.map((sd) => GetDepo(
+        depoId: sd.depoId,
+        depoAdi: sd.depoAdi,
+        depoKodu: sd.depoKod,
+        subeId: sd.subeId,
+      )).toList();
+    } else if (SaveSettings.depoList.isNotEmpty) {
+      rawDepoListesi = SaveSettings.depoList;
+    }
+
+    if (rawDepoListesi.isEmpty && SaveSettings.depoId > 0) {
+      rawDepoListesi = [
+        GetDepo(
+          depoId: SaveSettings.depoId,
+          depoAdi: SaveSettings.depoAdi.isNotEmpty ? SaveSettings.depoAdi : 'Varsayılan Depo',
+          depoKodu: '',
+          subeId: SaveSettings.subeId,
+        )
+      ];
+    }
+
     final Map<int, GetDepo> uniqueMap = {};
     for (final d in rawDepoListesi) {
       uniqueMap[d.depoId] = d;
@@ -249,17 +314,13 @@ class _BelgeOlusturViewState extends State<BelgeOlusturView> {
     final depoListesi = uniqueMap.values.toList();
 
     if (depoListesi.isNotEmpty) {
-      if (_cikisDepo == null || !depoListesi.contains(_cikisDepo)) {
-        _cikisDepo = depoListesi.firstWhere(
-          (d) => d.depoId == SaveSettings.depoId,
-          orElse: () => depoListesi.first,
-        );
-      }
-      if (_varisDepo == null || !depoListesi.contains(_varisDepo)) {
-        _varisDepo = depoListesi.length > 1 ? depoListesi[1] : depoListesi.first;
-      }
+      _cikisDepo ??= depoListesi.firstWhere(
+        (d) => d.depoId == SaveSettings.depoId,
+        orElse: () => depoListesi.first,
+      );
+      _varisDepo ??= depoListesi.length > 1 ? depoListesi[1] : depoListesi.first;
     }
-    final isDepoTransfer = widget.belgeTuru == 'TRANSFER' || widget.belgeTuru == 'SEVK_ISTEK' || widget.belgeTuru == 'SEVK_IADE_ISTEK' || widget.belgeTuru == 'SAYIM';
+    final isTransfer = widget.belgeTuru == 'TRANSFER' || widget.belgeTuru == 'SEVK_ISTEK' || widget.belgeTuru == 'SEVK_IADE_ISTEK';
     final needsCari = widget.belgeTuru == 'MALKABUL' ||
         widget.belgeTuru == 'SATIS' ||
         widget.belgeTuru == 'SIPARIS' ||
@@ -299,39 +360,137 @@ class _BelgeOlusturViewState extends State<BelgeOlusturView> {
                     ),
                     const SizedBox(height: 16),
 
-                    if (isDepoTransfer && depoListesi.isNotEmpty) ...[
-                      DropdownButtonFormField<GetDepo>(
-                        initialValue: _cikisDepo,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Çıkış Deposu',
-                          prefixIcon: Icon(Icons.output_rounded, color: AppTheme.accentOrange),
+                    if (depoListesi.isNotEmpty) ...[
+                      if (isTransfer) ...[
+                        InkWell(
+                          onTap: () async {
+                            final selected = await DepoSecimDialog.show(context, depoListesi, title: 'Çıkış Deposu');
+                            if (selected != null) {
+                              setState(() => _cikisDepo = selected);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.output_rounded, color: AppTheme.accentOrange),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _cikisDepo != null ? _cikisDepo!.depoAdi : 'Çıkış Deposu Seçin',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 15,
+                                            fontWeight: _cikisDepo != null ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.arrow_drop_down_circle_outlined, color: AppTheme.primaryBlue),
+                              ],
+                            ),
+                          ),
                         ),
-                        items: depoListesi.map((d) {
-                          return DropdownMenuItem<GetDepo>(
-                            value: d,
-                            child: Text(d.depoAdi, style: GoogleFonts.inter(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                          );
-                        }).toList(),
-                        onChanged: (val) => setState(() => _cikisDepo = val),
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<GetDepo>(
-                        initialValue: _varisDepo,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Varış / Hedef Depo',
-                          prefixIcon: Icon(Icons.input_rounded, color: AppTheme.accentGreen),
+                        const SizedBox(height: 16),
+                        InkWell(
+                          onTap: () async {
+                            final selected = await DepoSecimDialog.show(context, depoListesi, title: 'Varış / Hedef Depo');
+                            if (selected != null) {
+                              setState(() => _varisDepo = selected);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.input_rounded, color: AppTheme.accentGreen),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _varisDepo != null ? _varisDepo!.depoAdi : 'Varış / Hedef Depo Seçin',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 15,
+                                            fontWeight: _varisDepo != null ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.arrow_drop_down_circle_outlined, color: AppTheme.primaryBlue),
+                              ],
+                            ),
+                          ),
                         ),
-                        items: depoListesi.map((d) {
-                          return DropdownMenuItem<GetDepo>(
-                            value: d,
-                            child: Text(d.depoAdi, style: GoogleFonts.inter(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                          );
-                        }).toList(),
-                        onChanged: (val) => setState(() => _varisDepo = val),
-                      ),
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
+                      ] else ...[
+                        InkWell(
+                          onTap: () async {
+                            final label = widget.belgeTuru == 'SAYIM' ? 'Sayım Deposu' : 'Depo';
+                            final selected = await DepoSecimDialog.show(context, depoListesi, title: label);
+                            if (selected != null) {
+                              setState(() => _cikisDepo = selected);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: isDark ? AppTheme.darkCardBorder : AppTheme.lightCardBorder),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.store_rounded, color: AppTheme.primaryBlue),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _cikisDepo != null ? _cikisDepo!.depoAdi : (widget.belgeTuru == 'SAYIM' ? 'Sayım Deposu Seçin' : 'Depo Seçin'),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 15,
+                                            fontWeight: _cikisDepo != null ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.arrow_drop_down_circle_outlined, color: AppTheme.primaryBlue),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ],
 
                     if (needsCari) ...[

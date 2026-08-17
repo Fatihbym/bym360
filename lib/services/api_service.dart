@@ -821,38 +821,74 @@ class ApiService {
   }
 
   // Belge Onay & Onay İptal
-  static Future<bool> belgeOnay(int belgeId) async {
+  static Future<Map<String, dynamic>> belgeOnay({required int tur, required int id}) async {
     try {
       final uri = Uri.parse('${SaveSettings.sunucu}${ApiConstants.endpointGetBelgeOnay}').replace(
         queryParameters: {
           'TOKEN': SaveSettings.token,
-          'BELGEID': belgeId.toString(),
+          'VERSION': ApiConstants.fullVersion,
+          'SUPERUSERADI': SaveSettings.superUserPosta,
+          'TUR': tur.toString(),
+          'ID': id.toString(),
           'USERID': SaveSettings.userId.toString(),
         },
       );
       final response = await http.get(uri);
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        final Map<String, dynamic> data = (decoded is List && decoded.isNotEmpty)
+            ? decoded.first as Map<String, dynamic>
+            : (decoded is Map<String, dynamic> ? decoded : {});
+        final durum = parseInt(data['DURUM'] ?? data['durum']);
+        String mesaj = data['MESAJ']?.toString() ?? data['mesaj']?.toString() ?? '';
+
+        // Sunucu sayısal kodları (MESAJ: "1", "0", "19" vb.) kullanıcı dostu mesajlara çevir
+        mesaj = _translateOnayMesaj(mesaj, durum, isOnay: true);
+
+        return {
+          'success': durum == 1 || durum == Numarator.basarili,
+          'message': mesaj,
+        };
+      }
     } catch (e) {
       debugPrint('belgeOnay error: $e');
-      return false;
     }
+    return {'success': false, 'message': 'Bağlantı hatası veya yetkisiz işlem'};
   }
 
-  static Future<bool> belgeOnayIptal(int belgeId) async {
+  static Future<Map<String, dynamic>> belgeOnayIptal({required int tur, required int id}) async {
     try {
       final uri = Uri.parse('${SaveSettings.sunucu}${ApiConstants.endpointGetBelgeOnayIptal}').replace(
         queryParameters: {
           'TOKEN': SaveSettings.token,
-          'BELGEID': belgeId.toString(),
+          'VERSION': ApiConstants.fullVersion,
+          'SUPERUSERADI': SaveSettings.superUserPosta,
+          'TUR': tur.toString(),
+          'ID': id.toString(),
           'USERID': SaveSettings.userId.toString(),
         },
       );
       final response = await http.get(uri);
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        final Map<String, dynamic> data = (decoded is List && decoded.isNotEmpty)
+            ? decoded.first as Map<String, dynamic>
+            : (decoded is Map<String, dynamic> ? decoded : {});
+        final durum = parseInt(data['DURUM'] ?? data['durum']);
+        String mesaj = data['MESAJ']?.toString() ?? data['mesaj']?.toString() ?? '';
+
+        // Sunucu sayısal kodları (MESAJ: "1", "0", "19" vb.) kullanıcı dostu mesajlara çevir
+        mesaj = _translateOnayMesaj(mesaj, durum, isOnay: false);
+
+        return {
+          'success': durum == 1 || durum == Numarator.basarili,
+          'message': mesaj,
+        };
+      }
     } catch (e) {
       debugPrint('belgeOnayIptal error: $e');
-      return false;
     }
+    return {'success': false, 'message': 'Bağlantı hatası veya yetkisiz işlem'};
   }
 
   // Satır Güncelleme (Mobway Cloud Get_BelgeSatirGuncelle + Depo Sevk / Sayım Fallback)
@@ -1073,13 +1109,24 @@ class ApiService {
       final uri = Uri.parse('${SaveSettings.sunucu}${ApiConstants.endpointGetBelgeKapatListe}').replace(
         queryParameters: {
           'TOKEN': SaveSettings.token,
+          'VERSION': ApiConstants.fullVersion,
+          'SUPERUSERADI': SaveSettings.superUserPosta,
+          'TUR': '',
+          'GUNLIMIT': '90',
+          'LIMIT': '200',
+          'KULLANICIGRUPTUR': SaveSettings.grupTur.toString(),
           'USERID': SaveSettings.userId.toString(),
+          'LISTELEMETUR': 'Kapatılmamış',
+          'CARIID': '0',
+          'BELGEID': '0',
         },
       );
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final List<dynamic> list = jsonDecode(response.body);
-        return list.map((item) => GetBelgeKapatListe.fromJson(item)).toList();
+        final mappedList = list.map((item) => GetBelgeKapatListe.fromJson(item)).toList();
+        // 4 = SAYIM, 49 = TRANSFER, 89 = SEVK_ISTEK are internal inventory documents and have no financial/closing transaction
+        return mappedList.where((b) => b.belgeTuru != 4 && b.belgeTuru != 49 && b.belgeTuru != 89).toList();
       }
     } catch (e) {
       debugPrint('getBelgeKapatListe error: $e');
@@ -1363,26 +1410,35 @@ class ApiService {
         finalGonderenFisId = 0;
       }
 
+      final Map<String, String> queryParams = {
+        'TOKEN': SaveSettings.token,
+        'VERSION': ApiConstants.fullVersion,
+        'SUPERUSERADI': SaveSettings.superUserPosta,
+        'BELGETURU': finalBelgeTuru.toString(),
+        'BELGENO': belgeNo,
+        'ACIKLAMA': aciklama,
+        'CARIID': finalCariId.toString(),
+        'DEPOID': (depoId > 0 ? depoId : SaveSettings.depoId).toString(),
+        'SUBEID': (subeId > 0 ? subeId : SaveSettings.subeId).toString(),
+        'OPLAN': finalOPlan.toString(),
+        'USERID': SaveSettings.userId.toString(),
+        'VARISDEPO': finalVarisDepo.toString(),
+        'GONDERENFISID': finalGonderenFisId.toString(),
+        'PARAMETRE': finalParametre.toString(),
+      };
+
+      if (cYansit.isNotEmpty) {
+        queryParams['CYANSIT'] = cYansit;
+      }
+      if (tTarih.isNotEmpty) {
+        queryParams['TESLIMTARIH'] = tTarih;
+      }
+      if (bTarih.isNotEmpty) {
+        queryParams['BELGETARIHI'] = bTarih;
+      }
+
       final uri = Uri.parse('${SaveSettings.sunucu}${ApiConstants.endpointGetBelgeEkle}').replace(
-        queryParameters: {
-          'TOKEN': SaveSettings.token,
-          'VERSION': ApiConstants.fullVersion,
-          'SUPERUSERADI': SaveSettings.superUserPosta,
-          'BELGETURU': finalBelgeTuru.toString(),
-          'BELGENO': belgeNo,
-          'ACIKLAMA': aciklama,
-          'CARIID': finalCariId.toString(),
-          'DEPOID': (depoId > 0 ? depoId : SaveSettings.depoId).toString(),
-          'SUBEID': (subeId > 0 ? subeId : SaveSettings.subeId).toString(),
-          'OPLAN': finalOPlan.toString(),
-          'USERID': SaveSettings.userId.toString(),
-          'VARISDEPO': finalVarisDepo.toString(),
-          'GONDERENFISID': finalGonderenFisId.toString(),
-          'PARAMETRE': finalParametre.toString(),
-          'CYANSIT': cYansit,
-          'TESLIMTARIH': tTarih,
-          'BELGETARIHI': bTarih,
-        },
+        queryParameters: queryParams,
       );
 
       debugPrint('belgeEkle URI: $uri');
@@ -1596,6 +1652,7 @@ class ApiService {
     int cariId = 0,
     String okunanBirim = 'ADET',
     double okunanCarpan = 1.0,
+    int miktarKontrol = 0,
   }) async {
     try {
       final numericBelgeTurId = mapBelgeTuruToNumericId(belgeTuru);
@@ -1614,7 +1671,7 @@ class ApiService {
           'OPLANID': '0',
           'SUBEID': (subeId > 0 ? subeId : SaveSettings.subeId).toString(),
           'CARIID': cariId.toString(),
-          'MIKTARKONTROL': '0',
+          'MIKTARKONTROL': miktarKontrol.toString(),
           'URUNFIYAT': urunFiyat.toString(),
           'USERID': SaveSettings.userId.toString(),
           'URUNFIYATTUR': '0',
@@ -1634,6 +1691,26 @@ class ApiService {
             ? decoded.first as Map<String, dynamic>
             : (decoded is Map<String, dynamic> ? decoded : {});
         final durum = parseInt(data['DURUM'] ?? data['durum']);
+
+        // Auto-retry if quantity is flagged as invalid/suspicious (durum 17 / miktarYanlis)
+        if ((durum == 17 || durum == Numarator.miktarYanlis) && miktarKontrol == 0) {
+          debugPrint('Quantity validation warning (durum 17), retrying with MIKTARKONTROL=1...');
+          return await urunEkle(
+            belgeTuru: belgeTuru,
+            barkod: barkod,
+            belgeId: belgeId,
+            stokId: stokId,
+            miktar: miktar,
+            urunFiyat: urunFiyat,
+            depoId: depoId,
+            subeId: subeId,
+            cariId: cariId,
+            okunanBirim: okunanBirim,
+            okunanCarpan: okunanCarpan,
+            miktarKontrol: 1, // Override quantity warning
+          );
+        }
+
         return durum == 1 || durum == Numarator.basarili;
       }
     } catch (e) {
@@ -4194,6 +4271,75 @@ class ApiService {
       debugPrint('postAlternatifPayOdeme error: $e');
     }
     return {'success': false, 'message': 'AlternatifPay ödeme işlemi başlatılamadı.'};
+  }
+
+  static Future<List<Map<String, dynamic>>> getBildirimler() async {
+    try {
+      final uri = Uri.parse('${SaveSettings.sunucu}${ApiConstants.endpointBildirimMesajGoster}').replace(
+        queryParameters: {
+          'TOKEN': SaveSettings.token,
+          'USERID': SaveSettings.userId.toString(),
+        },
+      );
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        if (decoded is List) {
+          return decoded.map((item) => item as Map<String, dynamic>).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('getBildirimler error: $e');
+    }
+    return [];
+  }
+
+  /// Sunucudan dönen sayısal MESAJ/DURUM kodlarını kullanıcı dostu Türkçe mesajlara çevirir.
+  /// Onay ve onay-iptal işlemleri için ortak kullanılır.
+  static String _translateOnayMesaj(String mesaj, int durum, {required bool isOnay}) {
+    final String rawCode = mesaj.trim();
+    final String action = isOnay ? 'onaylama' : 'onay iptal';
+    final String successMsg = isOnay ? 'Belge başarıyla onaylandı.' : 'Belge onayı başarıyla iptal edildi.';
+
+    // Başarılı durum kodları
+    if (rawCode == '1' || rawCode.isEmpty) {
+      if (durum == 1 || durum == Numarator.basarili) {
+        return successMsg;
+      }
+      if (rawCode.isEmpty) {
+        return durum == 0
+            ? 'İşlem sunucu tarafından reddedildi. Lütfen yetki durumunuzu kontrol ediniz.'
+            : successMsg;
+      }
+    }
+
+    // Başarısız / sayısal hata kodları
+    if (rawCode == '0') {
+      return 'İşlem sunucu tarafından reddedildi. Lütfen yetki durumunuzu kontrol ediniz.';
+    }
+    if (rawCode == '2') {
+      return 'Belge zaten onaylıdır, tekrar işlem yapılamaz.';
+    }
+    if (rawCode == '3') {
+      return 'İşlem sırasında sunucu hatası oluştu. Lütfen tekrar deneyiniz.';
+    }
+    if (rawCode == '19' || durum == 19) {
+      return 'Belge $action yetkiniz bulunmamaktadır veya oturumunuz sonlanmıştır (Hata: 19).';
+    }
+    if (rawCode == '21' || durum == 21) {
+      return 'Bu işlem için yetkiniz bulunmamaktadır (Hata: 21).';
+    }
+    if (rawCode == '26' || durum == 26) {
+      return 'Belge yönetici onaylı olduğu için işlem yapılamaz (Hata: 26).';
+    }
+
+    // Tamamen sayısal ama tanımlanmamış kodlar
+    if (int.tryParse(rawCode) != null) {
+      return 'Sunucu yanıt kodu: $rawCode. Lütfen sistem yöneticinize danışınız.';
+    }
+
+    // Gerçek bir metin döndüyse olduğu gibi göster
+    return mesaj;
   }
 }
 

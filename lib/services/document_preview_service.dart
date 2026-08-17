@@ -495,41 +495,55 @@ class DocumentPreviewService {
             build: (context) {
               return pw.Container(
                 decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.black, width: 1),
-                  borderRadius: pw.BorderRadius.circular(4),
+                  // Premium light dotted border serving as a cutting/alignment guideline, rather than a heavy black box
+                  border: pw.Border.all(
+                    color: PdfColors.grey400,
+                    width: 0.5,
+                    style: pw.BorderStyle.dashed,
+                  ),
+                  borderRadius: pw.BorderRadius.circular(6),
                 ),
-                padding: const pw.EdgeInsets.all(6),
+                padding: const pw.EdgeInsets.all(8),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    // Firma ve Stok Adı
+                    // Header: Company Name & Date
                     pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
                         pw.Text(
                           safe(SaveSettings.firma.isNotEmpty ? SaveSettings.firma : 'BYM 360'),
-                          style: pw.TextStyle(font: fontBold, fontSize: 8, color: PdfColors.grey800),
+                          style: pw.TextStyle(font: fontBold, fontSize: 8, color: PdfColors.grey700),
                         ),
                         pw.Text(
-                          DateFormat('dd.MM.yy').format(DateTime.now()),
-                          style: pw.TextStyle(font: fontRegular, fontSize: 7, color: PdfColors.grey700),
+                          DateFormat('dd.MM.yyyy').format(DateTime.now()),
+                          style: pw.TextStyle(font: fontRegular, fontSize: 7, color: PdfColors.grey600),
                         ),
                       ],
                     ),
+                    pw.SizedBox(height: 2),
+
+                    // Product Title
                     pw.Text(
                       safe(stok.stokAdi),
-                      style: pw.TextStyle(font: fontBold, fontSize: 11),
+                      style: pw.TextStyle(font: fontBold, fontSize: 11, color: PdfColors.black),
                       maxLines: 2,
                       overflow: pw.TextOverflow.clip,
                     ),
 
-                    // Barkod & Fiyat Alanı
+                    // Subtle separation line
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                      child: pw.Divider(thickness: 0.5, color: PdfColors.grey400, borderStyle: pw.BorderStyle.dashed),
+                    ),
+
+                    // Barcode & Price Section
                     pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: pw.CrossAxisAlignment.end,
                       children: [
-                        // Barkod Çizimi
+                        // Left: Barcode and Product Info
                         pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
@@ -537,24 +551,54 @@ class DocumentPreviewService {
                               pw.BarcodeWidget(
                                 barcode: pw.Barcode.code128(),
                                 data: stok.barkod,
-                                width: 100,
-                                height: 32,
+                                width: 110,
+                                height: 28,
                                 drawText: true,
-                                textStyle: pw.TextStyle(font: fontRegular, fontSize: 7),
+                                textStyle: pw.TextStyle(font: fontRegular, fontSize: 6.5, color: PdfColors.black),
                               )
                             else
-                              pw.Text(safe('Kod: ${stok.stokKodu}'), style: pw.TextStyle(font: fontRegular, fontSize: 8)),
+                              pw.Text(
+                                safe('Barkod Yok'),
+                                style: pw.TextStyle(font: fontRegular, fontSize: 8, color: PdfColors.grey600),
+                              ),
+                            pw.SizedBox(height: 4),
+                            pw.Row(
+                              children: [
+                                pw.Text(
+                                  safe('KOD: ${stok.stokKodu}'),
+                                  style: pw.TextStyle(font: fontBold, fontSize: 7, color: PdfColors.grey800),
+                                ),
+                                pw.SizedBox(width: 6),
+                                pw.Text(
+                                  safe('BİRİM: ${stok.birim}'),
+                                  style: pw.TextStyle(font: fontRegular, fontSize: 7, color: PdfColors.grey700),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
 
-                        // Fiyat
+                        // Right: Price Box
                         pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.end,
+                          mainAxisAlignment: pw.MainAxisAlignment.end,
                           children: [
-                            pw.Text('KDV Dahil', style: pw.TextStyle(font: fontRegular, fontSize: 7, color: PdfColors.grey700)),
                             pw.Text(
-                              safe('${stok.satisFiyati.toStringAsFixed(2)} TL'),
-                              style: pw.TextStyle(font: fontBold, fontSize: 16, color: PdfColors.black),
+                              'KDV DAHİL FİYAT',
+                              style: pw.TextStyle(font: fontRegular, fontSize: 6.5, color: PdfColors.grey700),
+                            ),
+                            pw.Row(
+                              crossAxisAlignment: pw.CrossAxisAlignment.end,
+                              children: [
+                                pw.Text(
+                                  safe('₺${stok.satisFiyati.toStringAsFixed(2)}'),
+                                  style: pw.TextStyle(font: fontBold, fontSize: 17, color: PdfColors.black),
+                                ),
+                              ],
+                            ),
+                            pw.Text(
+                              safe('1 ${stok.birim}'),
+                              style: pw.TextStyle(font: fontRegular, fontSize: 6.5, color: PdfColors.grey600),
                             ),
                           ],
                         ),

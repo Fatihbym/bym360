@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:math' as math;
 import '../core/theme/app_theme.dart';
 import '../core/storage/save_settings.dart';
 import '../l10n/app_localizations.dart';
@@ -9,8 +10,8 @@ import 'urun_yonetimi_view.dart';
 import 'siparis_yonetimi_view.dart';
 import 'finans_yonetimi_view.dart';
 import 'belge_listele_view.dart';
+import 'bildirimler_view.dart';
 
-import '../widgets/dynamic_island_toast.dart';
 import 'ayarlar/sistem_ayarlari_view.dart';
 import 'login_view.dart';
 import '../widgets/app_dialogs.dart';
@@ -165,11 +166,10 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
             icon: const Icon(Icons.notifications_none_rounded),
             tooltip: context.tr('bildirimler', 'Bildirimler'),
             onPressed: () {
-              AppNotification.showWarning(
+              Navigator.push(
                 context,
-                context.tr('Yeni bildiriminiz yok.', 'Yeni bildiriminiz yok.'),
-                title: context.tr('bildirimler', 'Bildirimler'),
-              );
+                MaterialPageRoute(builder: (_) => const BildirimlerView()),
+              ).then((_) => _loadRealMetrics());
             },
           ),
           IconButton(
@@ -263,7 +263,7 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: item.targetBuilder),
-                          ),
+                          ).then((_) => _loadRealMetrics()),
                         );
                       },
                     ),
@@ -473,7 +473,7 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const BelgeListeleView(belgeTuru: '')),
-            );
+            ).then((_) => _loadRealMetrics());
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -622,9 +622,6 @@ class _AnamenuViewState extends State<AnamenuView> with SingleTickerProviderStat
   }
 }
 
-// ============================================================
-// bymcloud Login sayfasından esinlenen Arka Plan Çizgi Animasyon Motoru
-// ============================================================
 class BackgroundLinesPainter extends CustomPainter {
   final Animation<double>? animation;
   final bool isDark;
@@ -633,40 +630,72 @@ class BackgroundLinesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0075FF);
+    final double t = animation?.value ?? 0.0;
+    
+    // Draw background base gradient first for seamless visual blending
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final baseGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isDark
+          ? [const Color(0xFF0F172A), const Color(0xFF020617)] // Premium deep slate/navy
+          : [const Color(0xFFF8FAFC), const Color(0xFFF1F5F9)], // Soft slate white
+    );
+    canvas.drawRect(rect, Paint()..shader = baseGradient.createShader(rect));
 
-    final linePaint = Paint()
-      ..color = primaryColor.withValues(alpha: isDark ? 0.08 : 0.075)
-      ..strokeWidth = 1.4
-      ..style = PaintingStyle.stroke;
+    // Dynamic Morphing Glowing Orbs (Aura effect using Gaussian Blur)
+    // Orb 1: Moves in a smooth sine wave orbit on the top right
+    final orb1Center = Offset(
+      size.width * 0.8 + 40 * math.cos(t * 2 * math.pi),
+      size.height * 0.2 + 50 * math.sin(t * 2 * math.pi),
+    );
+    final orb1Paint = Paint()
+      ..color = (isDark ? const Color(0xFF6366F1) : const Color(0xFFC7D2FE)).withValues(alpha: isDark ? 0.12 : 0.22)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 90);
+    canvas.drawCircle(orb1Center, size.width * 0.45, orb1Paint);
 
-    final circlePaint = Paint()
-      ..color = primaryColor.withValues(alpha: isDark ? 0.06 : 0.055)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
+    // Orb 2: Moves in opposite orbit on the bottom left
+    final orb2Center = Offset(
+      size.width * 0.2 + 50 * math.sin(t * 2 * math.pi),
+      size.height * 0.8 + 40 * math.cos(t * 2 * math.pi),
+    );
+    final orb2Paint = Paint()
+      ..color = (isDark ? const Color(0xFF06B6D4) : const Color(0xFFCFFAFE)).withValues(alpha: isDark ? 0.08 : 0.18)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 80);
+    canvas.drawCircle(orb2Center, size.width * 0.4, orb2Paint);
 
-    const double step = 35.0;
-    final double shift = (animation?.value ?? 0.0) * step;
+    // Draw premium subtle grid structure
+    final gridPaint = Paint()
+      ..color = (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)).withValues(alpha: isDark ? 0.20 : 0.30)
+      ..strokeWidth = 0.8;
 
-    // Çapraz Çizgi Render Döngüsü
-    for (double i = -size.height - (step * 2); i < size.width + (step * 2); i += step) {
-      final double currentX = i + shift;
-      canvas.drawLine(
-        Offset(currentX, 0),
-        Offset(currentX + size.height, size.height),
-        linePaint,
-      );
+    const double gridSpacing = 45.0;
+    // We add slow horizontal drift to the grid lines
+    final double gridShiftX = t * gridSpacing;
+
+    for (double x = gridShiftX % gridSpacing; x < size.width; x += gridSpacing) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (double y = 0; y < size.height; y += gridSpacing) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
-    // Odak Halka Render Döngüsü
-    final double pulse = (animation?.value ?? 0.0) * 12.0;
+    // Draw tech constellation: glowing micro-dots at grid intersections that gently fade in and out
+    final dotPaint = Paint()
+      ..color = (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0075FF)).withValues(alpha: isDark ? 0.15 : 0.2)
+      ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.1), 100 + pulse, circlePaint);
-    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.1), 180 + pulse, circlePaint);
-    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.1), 260 + pulse, circlePaint);
-
-    canvas.drawCircle(Offset(size.width * 0.1, size.height * 0.85), 140 - pulse, circlePaint);
-    canvas.drawCircle(Offset(size.width * 0.1, size.height * 0.85), 220 - pulse, circlePaint);
+    // Subtly render dots at every 3rd grid intersection with breathing pulse
+    int colIndex = 0;
+    for (double x = gridShiftX % (gridSpacing * 3); x < size.width; x += gridSpacing * 3) {
+      int rowIndex = 0;
+      for (double y = gridSpacing * 2; y < size.height; y += gridSpacing * 3) {
+        final double pulseVal = 1.0 + 0.6 * math.sin(t * 2 * math.pi + (colIndex + rowIndex));
+        canvas.drawCircle(Offset(x, y), pulseVal, dotPaint);
+        rowIndex++;
+      }
+      colIndex++;
+    }
   }
 
   @override
