@@ -469,45 +469,86 @@ class ApiService {
 
 
   static String mapBelgeTuruToApi(String tur) {
-    switch (tur.toUpperCase()) {
+    final cleanTur = tur.toUpperCase()
+        .replaceAll('İ', 'I')
+        .replaceAll('Ş', 'S')
+        .replaceAll('Ğ', 'G')
+        .replaceAll('Ü', 'U')
+        .replaceAll('Ö', 'O')
+        .replaceAll('Ç', 'C')
+        .replaceAll('_', ' ')
+        .trim();
+
+    switch (cleanTur) {
       case 'TRANSFER':
-      case 'DEPO_SEVK':
+      case 'DEPO SEVK':
       case 'DEPOSEVK':
+      case 'DEPO SEVK BELGELERI':
+      case '49':
         return 'depoSevk';
       case 'SAYIM':
+      case 'SAYIM BELGELERI':
+      case '4':
         return 'sayim';
       case 'SIPARIS':
       case 'ATAMALITESLIMALMA':
         return 'atamaliteslimalma';
-      case 'SEVK_ISTEK':
+      case 'SEVK ISTEK':
+      case 'DEPO ISTEK':
+      case 'DEPOISTEK':
+      case 'DEPO SEVK ISTEK BELGELERI':
+      case '89':
         return 'depoistek';
-      case 'SEVK_IADE_ISTEK':
+      case 'SEVK IADE ISTEK':
+      case 'DEPO ISTEK IADE BELGELERI':
         return 'depoistekiade';
       case 'DEPOISTEKGONDERIM':
+      case 'DEPO ISTEK GONDERIM BELGELERI':
         return 'depoistekgonderim';
       case 'MALKABUL':
       case 'KABULISLEM':
+      case 'KABUL':
+      case 'KABUL ISLEMLERI':
+      case 'ALIM IRSALIYESI':
+      case '43':
         return 'kabul';
       case 'SATIS':
       case 'SATISISLEM':
+      case 'SATIS ISLEMLERI':
+      case 'SATIS IRSALIYESI':
+      case '41':
         return 'satis';
-      case 'ALIS_IADE':
+      case 'ALIS IADE':
       case 'KABULIADEISLEM':
+      case 'KABUL IADE ISLEMLERI':
+      case 'ALIS IADESI':
+      case '46':
         return 'kabulIade';
-      case 'SATIS_IADE':
+      case 'SATIS IADE':
       case 'SATISIADEISLEM':
+      case 'SATIS IADE ISLEMLERI':
+      case 'SATIS IADESI':
+      case '42':
         return 'satisIade';
-      case 'ALINAN_SIPARIS':
+      case 'ALINAN SIPARIS':
       case 'ALINANSIPARIS':
+      case 'ALINAN SIPARIS BELGELERI':
+      case '33':
         return 'alinansiparis';
-      case 'VERILEN_SIPARIS':
+      case 'VERILEN SIPARIS':
       case 'VERILENSIPARIS':
+      case 'VERILEN SIPARIS BELGELERI':
+      case '34':
         return 'verilensiparis';
       case 'SIPARISTESLIMAL':
-      case 'SP_TESLIM':
+      case 'SP TESLIM':
+      case 'SIPARIS TESLIM ALMA':
+      case 'SIPARIS TESLIM ALMA BELGELERI':
         return 'teslimalma';
       case 'SIPARISSEVKIYAT':
-      case 'SP_SEVK':
+      case 'SP SEVK':
+      case 'SIPARIS SEVKIYAT':
+      case 'SIPARIS SEVKIYAT BELGELERI':
         return 'sevkiyat';
       default:
         return tur;
@@ -515,53 +556,86 @@ class ApiService {
   }
 
   static int mapBelgeTuruToNumericId(String tur) {
-    switch (tur.toUpperCase()) {
+    final cleanTur = tur.toUpperCase()
+        .replaceAll('İ', 'I')
+        .replaceAll('Ş', 'S')
+        .replaceAll('Ğ', 'G')
+        .replaceAll('Ü', 'U')
+        .replaceAll('Ö', 'O')
+        .replaceAll('Ç', 'C')
+        .replaceAll('_', ' ')
+        .trim();
+
+    switch (cleanTur) {
       case 'SAYIM':
+      case 'SAYIM BELGELERI':
       case '4':
         return 4;
       case 'TRANSFER':
-      case 'DEPO_SEVK':
+      case 'DEPO SEVK':
       case 'DEPOSEVK':
+      case 'DEPO SEVK BELGELERI':
       case '49':
         return 49;
-      case 'SEVK_ISTEK':
-      case 'SEVK_IADE_ISTEK':
-      case 'DEPO_ISTEK':
+      case 'SEVK ISTEK':
+      case 'DEPO ISTEK':
+      case 'DEPOISTEK':
+      case 'DEPO SEVK ISTEK BELGELERI':
       case '89':
+        return 89;
+      case 'SEVK IADE ISTEK':
+      case 'DEPO ISTEK IADE BELGELERI':
         return 89;
       case 'MALKABUL':
       case 'KABULISLEM':
+      case 'KABUL':
+      case 'KABUL ISLEMLERI':
+      case 'ALIM IRSALIYESI':
       case '43':
         return 43; // Alım İrsaliyesi
       case 'SATIS':
       case 'SATISISLEM':
+      case 'SATIS ISLEMLERI':
+      case 'SATIS IRSALIYESI':
       case '41':
         return 41; // Satış İrsaliyesi
-      case 'ALIS_IADE':
+      case 'ALIS IADE':
       case 'KABULIADEISLEM':
+      case 'KABUL IADE ISLEMLERI':
+      case 'ALIS IADESI':
       case '46':
         return 46;
-      case 'SATIS_IADE':
+      case 'SATIS IADE':
       case 'SATISIADEISLEM':
+      case 'SATIS IADE ISLEMLERI':
+      case 'SATIS IADESI':
       case '42':
         return 42;
-      case 'ALINAN_SIPARIS':
+      case 'ALINAN SIPARIS':
       case 'ALINANSIPARIS':
+      case 'ALINAN SIPARIS BELGELERI':
       case 'SIPARIS':
       case '33':
         return 33;
-      case 'VERILEN_SIPARIS':
+      case 'VERILEN SIPARIS':
       case 'VERILENSIPARIS':
+      case 'VERILEN SIPARIS BELGELERI':
       case '34':
         return 34;
-      case 'SP_SEVK':
+      case 'SP SEVK':
       case 'SIPARISSEVKIYAT':
+      case 'SIPARIS SEVK':
+      case 'SIPARIS SEVKIYAT':
+      case 'SIPARIS SEVKIYAT BELGELERI':
         return 41;
-      case 'SP_TESLIM':
+      case 'SP TESLIM':
       case 'SIPARISTESLIMAL':
+      case 'SIPARIS TESLIM':
+      case 'SIPARIS TESLIM ALMA':
+      case 'SIPARIS TESLIM ALMA BELGELERI':
         return 43;
       default:
-        return int.tryParse(tur) ?? 4;
+        return int.tryParse(cleanTur) ?? 0;
     }
   }
 
@@ -833,7 +907,9 @@ class ApiService {
           'USERID': SaveSettings.userId.toString(),
         },
       );
+      debugPrint('belgeOnay URI: $uri');
       final response = await http.get(uri);
+      debugPrint('belgeOnay response (${response.statusCode}): ${response.body}');
       if (response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
         final Map<String, dynamic> data = (decoded is List && decoded.isNotEmpty)
@@ -841,6 +917,37 @@ class ApiService {
             : (decoded is Map<String, dynamic> ? decoded : {});
         final durum = parseInt(data['DURUM'] ?? data['durum']);
         String mesaj = data['MESAJ']?.toString() ?? data['mesaj']?.toString() ?? '';
+
+        // If Depo Sevk / Sayım returns 9 (Belge Bulunamadı), try alternative TUR parameter (49 <-> 4)
+        if ((durum == 9 || durum == Numarator.belgeBulunamadi) && (tur == 49 || tur == 4 || tur == 89)) {
+          final fallbackTur = tur == 49 ? 4 : (tur == 4 ? 49 : 49);
+          final fallbackUri = Uri.parse('${SaveSettings.sunucu}${ApiConstants.endpointGetBelgeOnay}').replace(
+            queryParameters: {
+              'TOKEN': SaveSettings.token,
+              'VERSION': ApiConstants.fullVersion,
+              'SUPERUSERADI': SaveSettings.superUserPosta,
+              'TUR': fallbackTur.toString(),
+              'ID': id.toString(),
+              'USERID': SaveSettings.userId.toString(),
+            },
+          );
+          debugPrint('belgeOnay fallback URI: $fallbackUri');
+          final fallbackResponse = await http.get(fallbackUri);
+          debugPrint('belgeOnay fallback response (${fallbackResponse.statusCode}): ${fallbackResponse.body}');
+          if (fallbackResponse.statusCode == 200) {
+            final dynamic fallbackDecoded = jsonDecode(fallbackResponse.body);
+            final Map<String, dynamic> fallbackData = (fallbackDecoded is List && fallbackDecoded.isNotEmpty)
+                ? fallbackDecoded.first as Map<String, dynamic>
+                : (fallbackDecoded is Map<String, dynamic> ? fallbackDecoded : {});
+            final fallbackDurum = parseInt(fallbackData['DURUM'] ?? fallbackData['durum']);
+            if (fallbackDurum == 1 || fallbackDurum == Numarator.basarili) {
+              return {
+                'success': true,
+                'message': _translateOnayMesaj(fallbackData['MESAJ']?.toString() ?? '', fallbackDurum, isOnay: true),
+              };
+            }
+          }
+        }
 
         // Sunucu sayısal kodları (MESAJ: "1", "0", "19" vb.) kullanıcı dostu mesajlara çevir
         mesaj = _translateOnayMesaj(mesaj, durum, isOnay: true);
@@ -868,7 +975,9 @@ class ApiService {
           'USERID': SaveSettings.userId.toString(),
         },
       );
+      debugPrint('belgeOnayIptal URI: $uri');
       final response = await http.get(uri);
+      debugPrint('belgeOnayIptal response (${response.statusCode}): ${response.body}');
       if (response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
         final Map<String, dynamic> data = (decoded is List && decoded.isNotEmpty)
@@ -876,6 +985,37 @@ class ApiService {
             : (decoded is Map<String, dynamic> ? decoded : {});
         final durum = parseInt(data['DURUM'] ?? data['durum']);
         String mesaj = data['MESAJ']?.toString() ?? data['mesaj']?.toString() ?? '';
+
+        // If Depo Sevk / Sayım returns 9 (Belge Bulunamadı), try alternative TUR parameter (49 <-> 4)
+        if ((durum == 9 || durum == Numarator.belgeBulunamadi) && (tur == 49 || tur == 4 || tur == 89)) {
+          final fallbackTur = tur == 49 ? 4 : (tur == 4 ? 49 : 49);
+          final fallbackUri = Uri.parse('${SaveSettings.sunucu}${ApiConstants.endpointGetBelgeOnayIptal}').replace(
+            queryParameters: {
+              'TOKEN': SaveSettings.token,
+              'VERSION': ApiConstants.fullVersion,
+              'SUPERUSERADI': SaveSettings.superUserPosta,
+              'TUR': fallbackTur.toString(),
+              'ID': id.toString(),
+              'USERID': SaveSettings.userId.toString(),
+            },
+          );
+          debugPrint('belgeOnayIptal fallback URI: $fallbackUri');
+          final fallbackResponse = await http.get(fallbackUri);
+          debugPrint('belgeOnayIptal fallback response (${fallbackResponse.statusCode}): ${fallbackResponse.body}');
+          if (fallbackResponse.statusCode == 200) {
+            final dynamic fallbackDecoded = jsonDecode(fallbackResponse.body);
+            final Map<String, dynamic> fallbackData = (fallbackDecoded is List && fallbackDecoded.isNotEmpty)
+                ? fallbackDecoded.first as Map<String, dynamic>
+                : (fallbackDecoded is Map<String, dynamic> ? fallbackDecoded : {});
+            final fallbackDurum = parseInt(fallbackData['DURUM'] ?? fallbackData['durum']);
+            if (fallbackDurum == 1 || fallbackDurum == Numarator.basarili) {
+              return {
+                'success': true,
+                'message': _translateOnayMesaj(fallbackData['MESAJ']?.toString() ?? '', fallbackDurum, isOnay: false),
+              };
+            }
+          }
+        }
 
         // Sunucu sayısal kodları (MESAJ: "1", "0", "19" vb.) kullanıcı dostu mesajlara çevir
         mesaj = _translateOnayMesaj(mesaj, durum, isOnay: false);
@@ -4313,29 +4453,59 @@ class ApiService {
       }
     }
 
-    // Başarısız / sayısal hata kodları
-    if (rawCode == '0') {
+    // Başarısız / sayısal hata kodları (Numarator kodları)
+    if (rawCode == '0' || durum == 0) {
       return 'İşlem sunucu tarafından reddedildi. Lütfen yetki durumunuzu kontrol ediniz.';
     }
-    if (rawCode == '2') {
+    if (rawCode == '2' || durum == Numarator.uyari) {
       return 'Belge zaten onaylıdır, tekrar işlem yapılamaz.';
     }
-    if (rawCode == '3') {
+    if (rawCode == '3' || durum == Numarator.hata) {
       return 'İşlem sırasında sunucu hatası oluştu. Lütfen tekrar deneyiniz.';
     }
-    if (rawCode == '19' || durum == 19) {
+    if (rawCode == '4' || durum == Numarator.onaysizBelge) {
+      return 'Belge henüz onaylanmamıştır (Hata: 4).';
+    }
+    if (rawCode == '5' || durum == Numarator.bosTahsilat) {
+      return 'Tahsilat bilgisi boş olduğu için işlem yapılamadı (Hata: 5).';
+    }
+    if (rawCode == '6' || durum == Numarator.onayliBelge) {
+      return 'Belge zaten onaylı olduğu için değişiklik yapılamaz (Hata: 6).';
+    }
+    if (rawCode == '7' || durum == Numarator.satirGuncellenemedi) {
+      return 'Belge satırları güncellenemedi (Hata: 7).';
+    }
+    if (rawCode == '8' || durum == Numarator.bosBelge) {
+      return 'Belgede hiç ürün satırı bulunmuyor. Onaylamadan önce ürün ekleyiniz (Hata: 8).';
+    }
+    if (rawCode == '9' || durum == Numarator.belgeBulunamadi) {
+      return 'Belge sunucuda bulunamadı veya belge türü uyuşmuyor (Hata: 9).';
+    }
+    if (rawCode == '10' || durum == Numarator.eklenemeyenUrunVar) {
+      return 'Belgede eklenemeyen ürünler bulunmaktadır (Hata: 10).';
+    }
+    if (rawCode == '11' || durum == Numarator.silinemeyenUrunVar) {
+      return 'Belgede silinemeyen ürünler bulunmaktadır (Hata: 11).';
+    }
+    if (rawCode == '12' || durum == Numarator.siparisBulunamadi) {
+      return 'İlgili sipariş sunucuda bulunamadı (Hata: 12).';
+    }
+    if (rawCode == '19' || durum == Numarator.cikisYap) {
       return 'Belge $action yetkiniz bulunmamaktadır veya oturumunuz sonlanmıştır (Hata: 19).';
     }
-    if (rawCode == '21' || durum == 21) {
+    if (rawCode == '21' || durum == Numarator.yetkiYok) {
       return 'Bu işlem için yetkiniz bulunmamaktadır (Hata: 21).';
     }
-    if (rawCode == '26' || durum == 26) {
+    if (rawCode == '26' || durum == Numarator.yoneticiOnayli) {
       return 'Belge yönetici onaylı olduğu için işlem yapılamaz (Hata: 26).';
+    }
+    if (rawCode == '27' || durum == Numarator.sahibiDegil) {
+      return 'Bu belge size ait olmadığı için işlem yapamazsınız (Hata: 27).';
     }
 
     // Tamamen sayısal ama tanımlanmamış kodlar
     if (int.tryParse(rawCode) != null) {
-      return 'Sunucu yanıt kodu: $rawCode. Lütfen sistem yöneticinize danışınız.';
+      return 'Sunucu yanıt kodu: $rawCode ($action işlemi başarısız).';
     }
 
     // Gerçek bir metin döndüyse olduğu gibi göster

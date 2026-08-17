@@ -346,14 +346,24 @@ class GetBelgeListele {
   });
 
   factory GetBelgeListele.fromJson(Map<String, dynamic> json) {
+    int parsedTurId = parseBelgeTurId(json['FISTURID'] ?? json['BELGETURU'] ?? json['TURID'] ?? json['BELGETURID'] ?? json['TUR']);
+    final fisTurRaw = json['FISTUR'] ?? json['BELGETUR'] ?? json['belgeTuru'];
+    if (parsedTurId == 0 && fisTurRaw != null) {
+      parsedTurId = parseBelgeTurId(fisTurRaw);
+    }
+    final String turAdi = (json['FISTURADI'] ?? json['BELGETURADI'] ?? json['belgeTurAdi'] ?? json['TURADI'] ?? (fisTurRaw is String ? fisTurRaw : '')).toString();
+    if (parsedTurId == 0 && turAdi.isNotEmpty) {
+      parsedTurId = parseBelgeTurId(turAdi);
+    }
+
     return GetBelgeListele(
       belgeId: parseInt(json['FISID'] ?? json['BELGEID'] ?? json['ID'] ?? json['belgeId']),
       belgeNo: (json['BELGENO'] ?? json['EVRAKNO'] ?? json['belgeNo'] ?? '').toString(),
-      belgeTuru: parseInt(json['FISTURID'] ?? json['BELGETURU'] ?? json['belgeTuru'] ?? json['FISTUR']),
-      belgeTurAdi: (json['FISTURADI'] ?? json['FISTUR'] ?? json['BELGETURADI'] ?? json['belgeTurAdi'] ?? '').toString(),
+      belgeTuru: parsedTurId,
+      belgeTurAdi: turAdi,
       cariAdi: (json['CARIADI'] ?? json['CARIAD'] ?? json['CARI'] ?? json['cariAdi'] ?? '').toString(),
       tarih: (json['FISTARIH'] ?? json['TARIH'] ?? json['BELGETARIH'] ?? json['tarih'] ?? '').toString(),
-      genelToplam: parseDouble(json['GENELTOPLAM'] ?? json['TUTAR'] ?? json['TOPLAM'] ?? json['genelToplam']),
+      genelToplam: parseDouble(json['GENELTOPLAM'] ?? json['TUTAR'] ?? json['TOPLAM'] ?? json['SATIRTUTAR'] ?? json['genelToplam']),
       aciklama: (json['ACIKLAMA'] ?? json['aciklama'] ?? '').toString(),
       cikisDepo: (json['CIKISDEPOADI'] ?? json['CIKISDEPO'] ?? json['DEPOADI'] ?? '').toString(),
       varisDepo: (json['VARISDEPOADI'] ?? json['VARISDEPO'] ?? json['GIRISDEPOADI'] ?? '').toString(),
@@ -389,6 +399,13 @@ class GetBelgeIcerik {
   });
 
   factory GetBelgeIcerik.fromJson(Map<String, dynamic> json) {
+    final miktar = parseDouble(json['URUNMİKTARI'] ?? json['URUNMIKTARI'] ?? json['MIKTAR'] ?? json['miktar']);
+    final birimFiyat = parseDouble(json['BIRIMFIYAT'] ?? json['STOKBIRIMFIY'] ?? json['FIYAT'] ?? json['birimFiyat']);
+    double tutar = parseDouble(json['TUTARTOPLAM'] ?? json['SATIRTUTAR'] ?? json['TUTAR'] ?? json['GENELTOPLAM'] ?? json['tutar']);
+    if (tutar == 0.0 && miktar > 0 && birimFiyat > 0) {
+      tutar = miktar * birimFiyat;
+    }
+
     return GetBelgeIcerik(
       satirId: parseInt(json['URUNSIRA'] ?? json['SATIRID'] ?? json['DID'] ?? json['satirId']),
       belgeId: parseInt(json['BELGEID'] ?? json['FISID'] ?? json['belgeId']),
@@ -396,10 +413,10 @@ class GetBelgeIcerik {
       stokKodu: (json['URUNKODU'] ?? json['STOKKODU'] ?? json['STOKKOD'] ?? json['KOD'] ?? json['stokKodu'] ?? '').toString(),
       stokAdi: (json['URUNADI'] ?? json['URUNAD'] ?? json['STOKADI'] ?? json['STOKAD'] ?? json['AD'] ?? json['stokAdi'] ?? '').toString(),
       barkod: (json['URUNBARKODU'] ?? json['STOKBARKOD'] ?? json['BARKOD'] ?? json['barkod'] ?? '').toString(),
-      miktar: parseDouble(json['URUNMİKTARI'] ?? json['URUNMIKTARI'] ?? json['MIKTAR'] ?? json['miktar']),
+      miktar: miktar,
       birim: (json['STOKBIRIM'] ?? json['BIRIM'] ?? json['birim'] ?? 'ADET').toString(),
-      birimFiyat: parseDouble(json['BIRIMFIYAT'] ?? json['STOKBIRIMFIY'] ?? json['FIYAT'] ?? json['birimFiyat']),
-      tutar: parseDouble(json['TUTARTOPLAM'] ?? json['SATIRTUTAR'] ?? json['TUTAR'] ?? json['tutar']),
+      birimFiyat: birimFiyat,
+      tutar: tutar,
     );
   }
 }
@@ -1070,15 +1087,25 @@ class GetBelgeKapatListe {
   });
 
   factory GetBelgeKapatListe.fromJson(Map<String, dynamic> json) {
+    int parsedTurId = parseBelgeTurId(json['FISTURID'] ?? json['BELGETURU'] ?? json['TURID'] ?? json['BELGETURID'] ?? json['TUR']);
+    final fisTurRaw = json['FISTUR'] ?? json['BELGETUR'] ?? json['belgeTuru'];
+    if (parsedTurId == 0 && fisTurRaw != null) {
+      parsedTurId = parseBelgeTurId(fisTurRaw);
+    }
+    final String turAdi = (json['FISTURADI'] ?? json['BELGETURADI'] ?? json['belgeTurAdi'] ?? json['TURADI'] ?? (fisTurRaw is String ? fisTurRaw : '')).toString();
+    if (parsedTurId == 0 && turAdi.isNotEmpty) {
+      parsedTurId = parseBelgeTurId(turAdi);
+    }
+
     return GetBelgeKapatListe(
       belgeId: parseInt(json['FISID'] ?? json['BELGEID'] ?? json['ID'] ?? json['belgeId']),
       belgeNo: (json['BELGENO'] ?? json['EVRAKNO'] ?? json['belgeNo'] ?? '').toString(),
-      belgeTuru: parseInt(json['FISTURID'] ?? json['BELGETURU'] ?? json['FISTUR'] ?? json['belgeTuru']),
-      belgeTurAdi: (json['FISTURADI'] ?? json['FISTUR'] ?? json['BELGETURADI'] ?? json['belgeTurAdi'] ?? '').toString(),
+      belgeTuru: parsedTurId,
+      belgeTurAdi: turAdi,
       cariAdi: (json['CARIADI'] ?? json['CARIAD'] ?? json['CARI'] ?? json['cariAdi'] ?? '').toString(),
       cariId: parseInt(json['CARIID'] ?? json['cariId']),
       tarih: (json['FISTARIH'] ?? json['TARIH'] ?? json['BELGETARIH'] ?? json['tarih'] ?? '').toString(),
-      genelToplam: parseDouble(json['GENELTOPLAM'] ?? json['TUTAR'] ?? json['TOPLAM'] ?? json['genelToplam']),
+      genelToplam: parseDouble(json['GENELTOPLAM'] ?? json['TUTAR'] ?? json['TOPLAM'] ?? json['SATIRTUTAR'] ?? json['genelToplam']),
       durum: (json['DURUM'] ?? 'ACIK').toString(),
     );
   }
@@ -1775,29 +1802,37 @@ class GetBelgeGetir {
   });
 
   factory GetBelgeGetir.fromJson(Map<String, dynamic> json) {
+    int parsedTurId = parseBelgeTurId(json['FISTUR'] ?? json['FISTURID'] ?? json['TURID'] ?? json['BELGETURID'] ?? json['TUR']);
+    if (parsedTurId == 0) {
+      final fisTurRaw = json['FISTURADI'] ?? json['BELGETURADI'] ?? json['FISTUR'];
+      if (fisTurRaw != null && fisTurRaw.toString().isNotEmpty) {
+        parsedTurId = parseBelgeTurId(fisTurRaw);
+      }
+    }
+
     return GetBelgeGetir(
-      durum: parseInt(json['DURUM']),
-      fisTur: parseInt(json['FISTUR']),
-      fisTarih: (json['FISTARIH'] ?? '').toString(),
+      durum: parseInt(json['DURUM'] ?? json['durum']),
+      fisTur: parsedTurId,
+      fisTarih: (json['FISTARIH'] ?? json['TARIH'] ?? '').toString(),
       depoAdi: (json['DEPOADI'] ?? '').toString(),
       cariAdi: (json['CARIADI'] ?? '').toString(),
       subeAdi: (json['SUBEADI'] ?? '').toString(),
       oPlanAdi: (json['OPLANADI'] ?? '').toString(),
-      fisId: parseInt(json['FISID'] ?? json['ID']),
+      fisId: parseInt(json['FISID'] ?? json['ID'] ?? json['BELGEID']),
       belgeNo: (json['BELGENO'] ?? '').toString(),
       depoId: parseInt(json['DEPOID']),
       cariId: parseInt(json['CARIID']),
       oPlanId: parseInt(json['OPLANID']),
       subeId: parseInt(json['SUBEID']),
       aciklama: (json['ACIKLAMA'] ?? '').toString(),
-      tutar: parseDouble(json['TUTAR'] ?? json['tutar']),
+      tutar: parseDouble(json['TUTAR'] ?? json['GENELTOPLAM'] ?? json['TOPLAM'] ?? json['tutar']),
       ad: (json['AD'] ?? '').toString(),
       barkod: (json['BARKOD'] ?? '').toString(),
       kod: (json['KOD'] ?? '').toString(),
       miktar: parseDouble(json['MIKTAR'] ?? json['miktar']),
       mevcutMiktar: parseDouble(json['MEVCUTMIKTAR'] ?? json['mevcutMiktar']),
-      fisTurAdi: (json['FISTURADI'] ?? '').toString(),
-      onay: parseInt(json['ONAY']),
+      fisTurAdi: (json['FISTURADI'] ?? json['BELGETURADI'] ?? '').toString(),
+      onay: parseInt(json['ONAY'] ?? json['onay']),
       toplamMiktar: parseDouble(json['TOPLAM_MIKTAR'] ?? json['toplamMiktar']),
       stokGrup1: (json['StokGrup1'] ?? '').toString(),
     );

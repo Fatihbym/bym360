@@ -11,6 +11,7 @@ import '../widgets/dynamic_island_toast.dart';
 
 class UrunEkleView extends StatefulWidget {
   final String belgeTuru;
+  final int belgeTurId;
   final String belgeNo;
   final String cariAdi;
   final int cariId;
@@ -21,6 +22,7 @@ class UrunEkleView extends StatefulWidget {
   const UrunEkleView({
     super.key,
     required this.belgeTuru,
+    this.belgeTurId = 0,
     required this.belgeNo,
     required this.cariAdi,
     this.cariId = 0,
@@ -56,6 +58,7 @@ class _UrunEkleViewState extends State<UrunEkleView> {
   }
 
   int _getBelgeTuruId() {
+    if (widget.belgeTurId > 0) return widget.belgeTurId;
     return ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
   }
 

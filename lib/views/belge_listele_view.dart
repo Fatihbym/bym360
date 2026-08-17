@@ -280,8 +280,8 @@ class _BelgeListeleViewState extends State<BelgeListeleView> {
                                       builder: (_) => BelgeDetayView(
                                         belgeId: item.belgeId,
                                         belgeNo: item.belgeNo,
-                                        belgeTuru: widget.belgeTuru,
-                                        belgeTurId: item.belgeTuru,
+                                        belgeTuru: item.belgeTurAdi.isNotEmpty ? item.belgeTurAdi : widget.belgeTuru,
+                                        belgeTurId: item.belgeTuru > 0 ? item.belgeTuru : ApiService.mapBelgeTuruToNumericId(widget.belgeTuru),
                                         cariAdi: item.cariAdi,
                                         tarih: item.tarih,
                                         genelToplam: item.genelToplam,

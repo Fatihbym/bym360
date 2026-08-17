@@ -21,6 +21,8 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
   List<GetBelgeKapatListe> _filteredBelgeler = [];
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  String _selectedFilter = 'all'; // 'all', 'satis', 'alis'
+  bool _initialModalShown = false;
 
   @override
   void initState() {
@@ -37,31 +39,81 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
   Future<void> _loadBelgeler() async {
     setState(() => _isLoading = true);
     final list = await ApiService.getBelgeKapatListe();
+    
+    // If opened with a specific initial document, ensure it is in the list
+    if (widget.initialBelge != null) {
+      final exists = list.any((b) => b.belgeId == widget.initialBelge!.belgeId);
+      if (!exists) {
+        list.insert(
+          0,
+          GetBelgeKapatListe(
+            belgeId: widget.initialBelge!.belgeId,
+            belgeNo: widget.initialBelge!.belgeNo,
+            belgeTuru: widget.initialBelge!.belgeTuru,
+            belgeTurAdi: widget.initialBelge!.belgeTurAdi,
+            cariAdi: widget.initialBelge!.cariAdi,
+            cariId: 0,
+            tarih: widget.initialBelge!.tarih,
+            genelToplam: widget.initialBelge!.genelToplam,
+            durum: 'ACIK',
+          ),
+        );
+      }
+    }
+
     if (!mounted) return;
     setState(() {
       _belgeler = list;
-      _filteredBelgeler = list;
+      _applyFilter();
       _isLoading = false;
     });
-  }
 
-  void _filter(String query) {
-    if (query.isEmpty) {
-      setState(() => _filteredBelgeler = _belgeler);
-    } else {
-      final q = query.toLowerCase().trim();
-      setState(() {
-        _filteredBelgeler = _belgeler.where((b) {
-          return b.belgeNo.toLowerCase().contains(q) ||
-              b.cariAdi.toLowerCase().contains(q) ||
-              b.belgeId.toString().contains(q);
-        }).toList();
+    // Auto-open modal if initialBelge was provided and not shown yet
+    if (widget.initialBelge != null && !_initialModalShown && _belgeler.isNotEmpty) {
+      _initialModalShown = true;
+      final target = _belgeler.firstWhere(
+        (b) => b.belgeId == widget.initialBelge!.belgeId,
+        orElse: () => _belgeler.first,
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showBelgeKapatModal(target);
+        }
       });
     }
   }
 
+  bool _checkIsAlis(GetBelgeKapatListe belge) {
+    final t = belge.belgeTuru;
+    if (t == 43 || t == 46 || t == 17 || t == 71 || t == 13 || t == 12 || t == 34) {
+      return true;
+    }
+    final name = belge.belgeTurAdi.toLowerCase();
+    return name.contains('alım') || name.contains('alis') || name.contains('kabul') || name.contains('tediye');
+  }
+
+  void _applyFilter() {
+    final query = _searchController.text.toLowerCase().trim();
+    setState(() {
+      _filteredBelgeler = _belgeler.where((b) {
+        final matchesQuery = query.isEmpty ||
+            b.belgeNo.toLowerCase().contains(query) ||
+            b.cariAdi.toLowerCase().contains(query) ||
+            b.belgeTurAdi.toLowerCase().contains(query) ||
+            b.belgeId.toString().contains(query);
+
+        if (!matchesQuery) return false;
+
+        final isAlis = _checkIsAlis(b);
+        if (_selectedFilter == 'satis') return !isAlis;
+        if (_selectedFilter == 'alis') return isAlis;
+        return true;
+      }).toList();
+    });
+  }
+
   void _showBelgeKapatModal(GetBelgeKapatListe belge) {
-    final isAlis = belge.belgeTuru == 17 || belge.belgeTuru == 43 || belge.belgeTuru == 71 || belge.belgeTuru == 13 || belge.belgeTuru == 12;
+    final isAlis = _checkIsAlis(belge);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     String selectedOdemeTuru = isAlis ? 'Kasa Tediye Fişi' : 'Kasa Tahsilat Fişi';
@@ -121,10 +173,14 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.assignment_turned_in_rounded, color: AppTheme.primaryBlue, size: 26),
+                          Icon(
+                            isAlis ? Icons.outbox_rounded : Icons.payments_rounded,
+                            color: isAlis ? AppTheme.accentOrange : AppTheme.accentGreen,
+                            size: 26,
+                          ),
                           const SizedBox(width: 8),
                           Text(
-                            'Belge Kapatma / Tahsilat',
+                            isAlis ? 'Belge Kapatma / Tediye' : 'Belge Kapatma / Tahsilat',
                             style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
                           ),
                         ],
@@ -188,9 +244,9 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: Text(
-                                            belge.belgeTurAdi.isNotEmpty ? belge.belgeTurAdi : (isAlis ? 'Alış/Tediye' : 'Satış/Tahsilat'),
+                                            belge.belgeTurAdi.isNotEmpty ? belge.belgeTurAdi : (isAlis ? 'Alış / Tediye' : 'Satış / Tahsilat'),
                                             style: GoogleFonts.inter(
-                                              fontSize: 10,
+                                              fontSize: 11,
                                               fontWeight: FontWeight.bold,
                                               color: isAlis ? AppTheme.accentOrange : AppTheme.accentGreen,
                                             ),
@@ -198,19 +254,19 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: 10),
                                     
-                                    // Client Row
+                                    // Cari Satırı
                                     Row(
                                       children: [
-                                        Icon(Icons.person_rounded, size: 14, color: Colors.grey.shade500),
+                                        Icon(Icons.person_rounded, size: 15, color: Colors.grey.shade500),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
                                             belge.cariAdi.isNotEmpty ? belge.cariAdi : "Tanımsız Cari",
                                             style: GoogleFonts.inter(
                                               fontSize: 13,
-                                              fontWeight: FontWeight.w500,
+                                              fontWeight: FontWeight.w600,
                                               color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
                                             ),
                                             maxLines: 1,
@@ -221,13 +277,13 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                                     ),
                                     const SizedBox(height: 6),
                                     
-                                    // Date Row
+                                    // Tarih Satırı
                                     Row(
                                       children: [
                                         Icon(Icons.calendar_today_rounded, size: 13, color: Colors.grey.shade500),
                                         const SizedBox(width: 8),
                                         Text(
-                                          belge.tarih,
+                                          belge.tarih.isNotEmpty ? belge.tarih : '-',
                                           style: GoogleFonts.inter(
                                             fontSize: 12,
                                             color: Colors.grey.shade500,
@@ -235,11 +291,11 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: 10),
                                     const Divider(height: 1),
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: 10),
                                     
-                                    // Total amount
+                                    // Kapatılacak Tutar
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
@@ -271,6 +327,34 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                     ),
                   ),
 
+                  // Tarih Seçimi
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2030),
+                      );
+                      if (picked != null) {
+                        setModalState(() => selectedDate = picked);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'İşlem Tarihi',
+                        prefixIcon: const Icon(Icons.calendar_month_rounded, color: AppTheme.primaryBlue),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(
+                        DateFormat('dd.MM.yyyy').format(selectedDate),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
                   // Ödeme Türü Seçici
                   DropdownButtonFormField<String>(
                     initialValue: selectedOdemeTuru,
@@ -282,12 +366,14 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                     ),
                     items: isAlis
                         ? const [
-                            DropdownMenuItem(value: 'Kasa Tediye Fişi', child: Text('Kasa Tediye Fişi (Nakit Output)', overflow: TextOverflow.ellipsis)),
-                            DropdownMenuItem(value: 'Kredi Kartı Alış', child: Text('Kredi Kartı Alış (Banka Output)', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Kasa Tediye Fişi', child: Text('Kasa Tediye Fişi (Nakit Çıkış)', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Kredi Kartı Alış', child: Text('Kredi Kartı Alış (Banka Çıkış)', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Banka Havale / EFT', child: Text('Banka Havale / EFT (Banka Çıkış)', overflow: TextOverflow.ellipsis)),
                           ]
                         : const [
                             DropdownMenuItem(value: 'Kasa Tahsilat Fişi', child: Text('Kasa Tahsilat Fişi (Nakit Giriş)', overflow: TextOverflow.ellipsis)),
                             DropdownMenuItem(value: 'Kredi Kartı Satış', child: Text('Kredi Kartı Satış (Banka POS)', overflow: TextOverflow.ellipsis)),
+                            DropdownMenuItem(value: 'Banka Havale / EFT', child: Text('Banka Havale / EFT (Banka Giriş)', overflow: TextOverflow.ellipsis)),
                           ],
                     onChanged: (val) {
                       if (val != null) {
@@ -317,7 +403,6 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                         if (val != null) {
                           setModalState(() {
                             selectedSube = val;
-                            // Reset and filter kasa/banka to the first element of the new sube
                             final subeKasaList = SaveSettings.subeKasaList.where((k) => k.subeId == val.subeId).toList();
                             selectedKasa = subeKasaList.isNotEmpty ? subeKasaList.first : null;
 
@@ -337,7 +422,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                         initialValue: selectedKasa,
                         isExpanded: true,
                         decoration: InputDecoration(
-                          labelText: 'Tahsilat Kasası',
+                          labelText: isAlis ? 'Ödeme Kasası' : 'Tahsilat Kasası',
                           prefixIcon: const Icon(Icons.account_balance_wallet_rounded, color: AppTheme.primaryBlue),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
@@ -413,7 +498,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       labelText: 'Kapatılacak Tutar (₺)',
-                      prefixIcon: const Icon(Icons.attach_money_rounded),
+                      prefixIcon: const Icon(Icons.currency_lira_rounded),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
@@ -451,17 +536,17 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                     height: 50,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentGreen,
+                        backgroundColor: isAlis ? AppTheme.accentOrange : AppTheme.accentGreen,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       icon: const Icon(Icons.check_circle_rounded),
                       label: Text(
-                        'BELGEYİ KAPAT / TAHSİL ET',
+                        isAlis ? 'BELGEYİ KAPAT / TEDİYE YAP' : 'BELGEYİ KAPAT / TAHSİL ET',
                         style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                       onPressed: () async {
-                        final tutarVal = double.tryParse(tlController.text.trim()) ?? 0.0;
+                        final tutarVal = double.tryParse(tlController.text.trim().replaceAll(',', '.')) ?? 0.0;
                         if (tutarVal <= 0) {
                           AppNotification.showWarning(context, 'Lütfen geçerli bir tutar giriniz.', title: 'Geçersiz Tutar');
                           return;
@@ -470,13 +555,13 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                         if (isKasa) {
                           final kasaIdVal = selectedKasa?.kasaId ?? 0;
                           if (kasaIdVal <= 0) {
-                            AppNotification.showWarning(context, 'Lütfen bir tahsilat kasası seçiniz.', title: 'Kasa Seçilmedi');
+                            AppNotification.showWarning(context, 'Lütfen bir kasa seçiniz.', title: 'Kasa Seçilmedi');
                             return;
                           }
                         } else {
                           final bankaIdVal = selectedBanka?.bankaId ?? 0;
                           if (bankaIdVal <= 0) {
-                            AppNotification.showWarning(context, 'Lütfen bir hesap / POS bankası seçiniz.', title: 'Banka Seçilmedi');
+                            AppNotification.showWarning(context, 'Lütfen bir banka hesabı seçiniz.', title: 'Banka Seçilmedi');
                             return;
                           }
                         }
@@ -489,7 +574,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                         if (isKasa) {
                           final kasaIdVal = selectedKasa?.kasaId ?? 0;
                           success = await ApiService.belgeTahsilKasa(
-                            fatTur: belge.belgeTuru,
+                            fatTur: belge.belgeTuru > 0 ? belge.belgeTuru : (isAlis ? 43 : 41),
                             fisId: belge.belgeId,
                             subeId: subeIdVal,
                             kasaId: kasaIdVal,
@@ -501,7 +586,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                         } else {
                           final bankaIdVal = selectedBanka?.bankaId ?? 0;
                           success = await ApiService.belgeTahsilBanka(
-                            fatTur: belge.belgeTuru,
+                            fatTur: belge.belgeTuru > 0 ? belge.belgeTuru : (isAlis ? 43 : 41),
                             fisId: belge.belgeId,
                             subeId: subeIdVal,
                             bankaId: bankaIdVal,
@@ -530,6 +615,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                           showDialog(
                             context: context,
                             builder: (dialogCtx) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               title: const Text('Makbuz Yazdır'),
                               content: const Text('Kapatma işlemi tamamlandı. Fiş/Makbuz yazdırmak ister misiniz?'),
                               actions: [
@@ -541,6 +627,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppTheme.accentPurple,
                                     foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                   ),
                                   onPressed: () {
                                     Navigator.pop(dialogCtx);
@@ -583,6 +670,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final totalAmount = _filteredBelgeler.fold<double>(0.0, (s, b) => s + b.genelToplam);
 
     return Scaffold(
       appBar: AppBar(
@@ -597,35 +685,70 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
       ),
       body: Column(
         children: [
-          // Search Header Card
+          // Search & Filter Header
           Container(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             color: isDark ? AppTheme.darkSurface : Colors.grey.shade100,
-            child: TextField(
-              controller: _searchController,
-              onChanged: _filter,
-              decoration: InputDecoration(
-                hintText: 'Belge No veya Cari Adı ile ara...',
-                prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded),
-                        onPressed: () {
-                          _searchController.clear();
-                          _filter('');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: isDark ? AppTheme.darkCardBorder : Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  onChanged: (_) => _applyFilter(),
+                  decoration: InputDecoration(
+                    hintText: 'Belge No veya Cari Adı ile ara...',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear_rounded),
+                            onPressed: () {
+                              _searchController.clear();
+                              _applyFilter();
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: isDark ? AppTheme.darkCardBorder : Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              ),
+                const SizedBox(height: 10),
+                // Category Filter Chips
+                Row(
+                  children: [
+                    _buildFilterChip('Tümü', 'all'),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('Satış / Tahsilat', 'satis'),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('Alış / Tediye', 'alis'),
+                  ],
+                ),
+              ],
             ),
           ),
+          
+          // Stats Row
+          if (!_isLoading && _filteredBelgeler.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${_filteredBelgeler.length} Açık Belge',
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+                  ),
+                  Text(
+                    'Toplam: ₺${totalAmount.toStringAsFixed(2)}',
+                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                  ),
+                ],
+              ),
+            ),
           const Divider(height: 1),
 
           // List View
@@ -659,7 +782,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                           separatorBuilder: (c, i) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final belge = _filteredBelgeler[index];
-                            final isAlis = belge.belgeTuru == 17 || belge.belgeTuru == 43 || belge.belgeTuru == 71 || belge.belgeTuru == 13 || belge.belgeTuru == 12;
+                            final isAlis = _checkIsAlis(belge);
 
                             return Container(
                               decoration: BoxDecoration(
@@ -720,7 +843,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                                                         borderRadius: BorderRadius.circular(8),
                                                       ),
                                                       child: Text(
-                                                        belge.belgeTurAdi.isNotEmpty ? belge.belgeTurAdi : (isAlis ? 'Alış/Tediye' : 'Satış/Tahsilat'),
+                                                        belge.belgeTurAdi.isNotEmpty ? belge.belgeTurAdi : (isAlis ? 'Alış / Tediye' : 'Satış / Tahsilat'),
                                                         style: GoogleFonts.inter(
                                                           fontSize: 10,
                                                           fontWeight: FontWeight.bold,
@@ -762,7 +885,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                                                         Icon(Icons.calendar_today_rounded, size: 12, color: Colors.grey.shade500),
                                                         const SizedBox(width: 6),
                                                         Text(
-                                                          belge.tarih,
+                                                          belge.tarih.isNotEmpty ? belge.tarih : '-',
                                                           style: GoogleFonts.inter(
                                                             fontSize: 11,
                                                             color: Colors.grey.shade500,
@@ -778,7 +901,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                                                           style: GoogleFonts.outfit(
                                                             fontWeight: FontWeight.bold,
                                                             fontSize: 16,
-                                                            color: AppTheme.primaryBlue,
+                                                            color: isAlis ? AppTheme.accentOrange : AppTheme.accentGreen,
                                                           ),
                                                         ),
                                                         const SizedBox(width: 10),
@@ -793,7 +916,7 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
                                                           ),
                                                           onPressed: () => _showBelgeKapatModal(belge),
                                                           child: Text(
-                                                            'Kapat',
+                                                            isAlis ? 'Tediye' : 'Kapat',
                                                             style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold),
                                                           ),
                                                         ),
@@ -817,6 +940,28 @@ class _BelgeKapatViewState extends State<BelgeKapatView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _selectedFilter == value;
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? Colors.white : null,
+        ),
+      ),
+      selected: isSelected,
+      selectedColor: AppTheme.primaryBlue,
+      onSelected: (_) {
+        setState(() {
+          _selectedFilter = value;
+          _applyFilter();
+        });
+      },
     );
   }
 }

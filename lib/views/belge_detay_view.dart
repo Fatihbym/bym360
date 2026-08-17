@@ -38,6 +38,44 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
   bool _isLoading = true;
   GetBelgeGetir? _belgeHeader;
 
+  int get _effectiveTurId {
+    if (_belgeHeader != null && _belgeHeader!.fisTur > 0) {
+      return _belgeHeader!.fisTur;
+    }
+    if (widget.belgeTurId > 0) {
+      return widget.belgeTurId;
+    }
+    final mapped = ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
+    if (mapped > 0) return mapped;
+
+    if (_belgeHeader != null && _belgeHeader!.fisTurAdi.isNotEmpty) {
+      final mappedHeader = ApiService.mapBelgeTuruToNumericId(_belgeHeader!.fisTurAdi);
+      if (mappedHeader > 0) return mappedHeader;
+    }
+
+    final tUpper = widget.belgeTuru.toUpperCase();
+    if (tUpper.contains('TRANSFER') || tUpper.contains('SEVK')) return 49;
+    if (tUpper.contains('SAYIM')) return 4;
+    if (tUpper.contains('SATIS') || tUpper.contains('SATIŞ')) return 41;
+    if (tUpper.contains('KABUL') || tUpper.contains('ALIM') || tUpper.contains('ALIŞ')) return 43;
+
+    return 4;
+  }
+
+  double get _hesaplananGenelToplam {
+    if (_urunList.isNotEmpty) {
+      final sum = _urunList.fold<double>(
+        0.0,
+        (s, e) => s + (e.tutar > 0 ? e.tutar : (e.birimFiyat * e.miktar)),
+      );
+      if (sum > 0) return sum;
+    }
+    if (_belgeHeader != null && _belgeHeader!.tutar > 0) {
+      return _belgeHeader!.tutar;
+    }
+    return widget.genelToplam;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -46,13 +84,12 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
 
   Future<void> _loadDetay() async {
     setState(() => _isLoading = true);
-    final turId = widget.belgeTurId > 0
-        ? widget.belgeTurId
-        : ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
+    final turId = _effectiveTurId;
+    final docId = (_belgeHeader != null && _belgeHeader!.fisId > 0) ? _belgeHeader!.fisId : widget.belgeId;
     
     // Fetch both document header and details
-    final headerFuture = ApiService.belgeGetir(turId, widget.belgeId);
-    final itemsFuture = ApiService.getBelgeDetay(turId, widget.belgeId);
+    final headerFuture = ApiService.belgeGetir(turId, docId);
+    final itemsFuture = ApiService.getBelgeDetay(turId, docId);
     
     final results = await Future.wait([headerFuture, itemsFuture]);
     final header = results[0] as GetBelgeGetir?;
@@ -69,18 +106,18 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
   }
 
   void _showBaskiOnizleme() {
-    double total = 0.0;
-    for (final item in _urunList) {
-      total += item.tutar > 0 ? item.tutar : (item.birimFiyat * item.miktar);
-    }
-    final netTotal = total > 0 ? total : widget.genelToplam;
+    final netTotal = _hesaplananGenelToplam;
+    final docNo = widget.belgeNo.isNotEmpty ? widget.belgeNo : (_belgeHeader?.belgeNo.isNotEmpty == true ? _belgeHeader!.belgeNo : '#${widget.belgeId}');
+    final docTuru = _belgeHeader?.fisTurAdi.isNotEmpty == true ? _belgeHeader!.fisTurAdi : widget.belgeTuru;
+    final docCari = _belgeHeader?.cariAdi.isNotEmpty == true ? _belgeHeader!.cariAdi : widget.cariAdi;
+    final docTarih = _belgeHeader?.fisTarih.isNotEmpty == true ? _belgeHeader!.fisTarih : widget.tarih;
 
     BaskiOnizlemeDialog.showBelge(
       context: context,
-      belgeNo: widget.belgeNo.isNotEmpty ? widget.belgeNo : '#${widget.belgeId}',
-      belgeTuru: widget.belgeTuru,
-      cariAdi: widget.cariAdi,
-      tarih: widget.tarih,
+      belgeNo: docNo,
+      belgeTuru: docTuru,
+      cariAdi: docCari,
+      tarih: docTarih,
       genelToplam: netTotal,
       urunler: _urunList,
     );
@@ -88,9 +125,16 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
 
   @override
   Widget build(BuildContext context) {
+    final docNo = widget.belgeNo.isNotEmpty ? widget.belgeNo : (_belgeHeader?.belgeNo.isNotEmpty == true ? _belgeHeader!.belgeNo : '#${widget.belgeId}');
+    final docTuru = _belgeHeader?.fisTurAdi.isNotEmpty == true ? _belgeHeader!.fisTurAdi : widget.belgeTuru;
+    final docCari = _belgeHeader?.cariAdi.isNotEmpty == true ? _belgeHeader!.cariAdi : (widget.cariAdi.isNotEmpty ? widget.cariAdi : '-');
+    final docTarih = _belgeHeader?.fisTarih.isNotEmpty == true ? _belgeHeader!.fisTarih : (widget.tarih.isNotEmpty ? widget.tarih : '-');
+    final grandTotal = _hesaplananGenelToplam;
+    final effectiveDocId = (_belgeHeader != null && _belgeHeader!.fisId > 0) ? _belgeHeader!.fisId : widget.belgeId;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Belge Detay ${widget.belgeNo.isNotEmpty ? '- ${widget.belgeNo}' : '#${widget.belgeId}'}'),
+        title: Text('Belge Detay ${docNo.isNotEmpty ? '- $docNo' : '#${widget.belgeId}'}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.print_rounded),
@@ -101,10 +145,8 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
             onSelected: (val) async {
               switch (val) {
                 case 'onay':
-                  final turId = widget.belgeTurId > 0
-                      ? widget.belgeTurId
-                      : ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
-                  final res = await ApiService.belgeOnay(tur: turId, id: widget.belgeId);
+                  final turId = _effectiveTurId;
+                  final res = await ApiService.belgeOnay(tur: turId, id: effectiveDocId);
                   if (!mounted) return;
                   if (res['success'] == true) {
                     AppNotification.showSuccess(
@@ -122,10 +164,8 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                   }
                   break;
                 case 'iptal':
-                  final turId = widget.belgeTurId > 0
-                      ? widget.belgeTurId
-                      : ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
-                  final res = await ApiService.belgeOnayIptal(tur: turId, id: widget.belgeId);
+                  final turId = _effectiveTurId;
+                  final res = await ApiService.belgeOnayIptal(tur: turId, id: effectiveDocId);
                   if (!mounted) return;
                   if (res['success'] == true) {
                     AppNotification.showSuccess(
@@ -152,13 +192,13 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                       builder: (context) => BelgeKapatView(
                         initialBelge: GetBelgeListele(
                           belgeId: widget.belgeId,
-                          belgeNo: widget.belgeNo,
-                          belgeTuru: 1,
-                          belgeTurAdi: widget.belgeTuru,
-                          cariAdi: widget.cariAdi,
-                          tarih: widget.tarih,
-                          genelToplam: widget.genelToplam,
-                          aciklama: '${widget.belgeTuru} - ${widget.cariAdi}',
+                          belgeNo: docNo,
+                          belgeTuru: _effectiveTurId,
+                          belgeTurAdi: docTuru,
+                          cariAdi: docCari,
+                          tarih: docTarih,
+                          genelToplam: grandTotal,
+                          aciklama: '$docTuru - $docCari',
                         ),
                       ),
                     ),
@@ -213,11 +253,11 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                     ),
                   ),
                 ],
-                _infoRow('Belge No', widget.belgeNo.isNotEmpty ? widget.belgeNo : '#${widget.belgeId}'),
-                _infoRow('Belge Türü', widget.belgeTuru),
-                _infoRow('Cari', widget.cariAdi.isNotEmpty ? widget.cariAdi : '-'),
-                _infoRow('Tarih', widget.tarih.isNotEmpty ? widget.tarih : '-'),
-                _infoRow('Genel Toplam', '₺${widget.genelToplam.toStringAsFixed(2)}'),
+                _infoRow('Belge No', docNo),
+                _infoRow('Belge Türü', docTuru),
+                _infoRow('Cari', docCari),
+                _infoRow('Tarih', docTarih),
+                _infoRow('Genel Toplam', '₺${grandTotal.toStringAsFixed(2)}'),
               ],
             ),
           ),
@@ -259,9 +299,8 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                               ? item.stokAdi
                               : (item.stokKodu.isNotEmpty ? item.stokKodu : 'Ürün Satırı #${index + 1}');
 
-                          final turId = widget.belgeTurId > 0
-                              ? widget.belgeTurId
-                              : ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
+                          final turId = _effectiveTurId;
+                          final satirTutar = item.tutar > 0 ? item.tutar : (item.birimFiyat * item.miktar);
 
                           return Dismissible(
                             key: ValueKey(item.satirId != 0 ? item.satirId : index),
@@ -284,7 +323,7 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                                   children: [
                                     Text('₺${item.birimFiyat.toStringAsFixed(2)}',
                                         style: const TextStyle(fontSize: 13)),
-                                    Text('₺${item.tutar.toStringAsFixed(2)}',
+                                    Text('₺${satirTutar.toStringAsFixed(2)}',
                                         style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.accentGreen)),
@@ -315,9 +354,10 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
                   this.context,
                   MaterialPageRoute(
                     builder: (context) => UrunEkleView(
-                      belgeTuru: widget.belgeTuru,
-                      belgeNo: widget.belgeNo,
-                      cariAdi: widget.cariAdi,
+                      belgeTuru: docTuru,
+                      belgeTurId: _effectiveTurId,
+                      belgeNo: docNo,
+                      cariAdi: docCari != '-' ? docCari : '',
                       belgeId: widget.belgeId,
                     ),
                   ),
@@ -488,9 +528,7 @@ class _BelgeDetayViewState extends State<BelgeDetayView> {
 
                       setDialogState(() => isSubmitting = true);
 
-                      final turId = widget.belgeTurId > 0
-                          ? widget.belgeTurId
-                          : ApiService.mapBelgeTuruToNumericId(widget.belgeTuru);
+                      final turId = _effectiveTurId;
 
                       final success = await ApiService.belgeSatirGuncelle(
                         belgeId: widget.belgeId,
