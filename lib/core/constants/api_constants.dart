@@ -1,7 +1,7 @@
 class ApiConstants {
   static const String appTitle = 'BYM 360';
   static const String appVersion = '1.1.8';
-  static const int appVersionCode = 171;
+  static const int appVersionCode = 180;
   static const int webServiceVersion = 29;
   static String get fullVersion => '$appVersion.$webServiceVersion';
   static const int uygulamaId = 4;
